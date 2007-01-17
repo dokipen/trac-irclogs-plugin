@@ -1,0 +1,81 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="layout.html" />
+  <head>
+    <title>IRC Logs</title>
+  </head>
+  <body>
+    <div id="content" class="irclogs">
+      <h1>IRC Logs</h1>
+      <table class="minical">
+        <tr class="head">
+          <th colspan="7">${cal.year} ${cal.month}</th>
+        </tr>
+        <tr class="days">
+          <th>Mo</th>
+          <th>Tu</th>
+          <th>We</th>
+          <th>Th</th>
+          <th>Fr</th>
+          <th>Sa</th>
+          <th>So</th>
+        </tr>
+        <tr class="week" py:for="week in cal.weeks">
+          <py:for each="day in week">
+            <td py:if="day.empty" class="empty">&nbsp;</td>
+            <td py:if="not day.empty" class="${day.has_log and 'has' or 'no'}_log">
+              <a href="${day.href}">${day.caption}</a>
+            </td>
+          </py:for>
+        </tr>
+        <tr class="nav">
+         <td><a href="${cal.prev_year.href}">◀</a></td>
+         <td><a href="${cal.prev_month.href}">◂</a></td>
+         <td colspan="3">&nbsp;</td>
+         <td><a href="${cal.next_month.href}">▸</a></td>
+         <td><a href="${cal.next_year.href}">▶</a></td>
+        </tr>
+      </table>
+
+      <py:choose test="viewmode">
+        <py:when test="'years'">
+          <h2>Years</h2>
+          <ul class="years">
+            <li py:for="year in years"><a href="${year.href}">${year.caption}</a></li>
+          </ul>
+        </py:when>
+        <py:when test="'months'">
+          <h2>Logs for ${year}</h2>
+          <ul class="months">
+            <li py:for="month in months"><a href="${month.href}">${month.caption} ${year}</a></li>
+          </ul>
+        </py:when>
+        <py:when test="'days'">
+          <h2>Logs for ${month} ${year}</h2>
+          <ul class="days">
+            <li py:for="day in days"><a href="${day.href}">${day.caption}. ${month} ${year}</a></li>
+          </ul>
+        </py:when>
+        <py:when test="'day'">
+          <h2>${day}. ${month} ${year}</h2>
+          <div py:if="missing">
+            No logfile for this day.
+          </div>
+          <table class="irclog" py:if="not missing">
+            <tr py:for="line in lines" class="${line.mode}">
+              <td class="time">[<a href="#T${line.time}" id="${line.time}">${line.time}</a>]</td>
+              <td class="left" py:if="line.mode in ('action', 'server')">*</td>
+              <td class="left" py:if="line.mode == 'channel'">&lt;<span class="${line.nickcls}">${line.nickname}</span>&gt;</td>
+              <td class="right">${line.mode != 'channel' and line.nickname + ' ' or '' }${line.text}</td>
+            </tr>
+          </table>
+        </py:when>
+      </py:choose>
+      <br style="clear:both" />
+    </div>
+  </body>
+</html>
+
