@@ -29,10 +29,10 @@ class IrclogsPlugin(Component):
     )
     charset = Option('irclogs', 'charset', 'utf-8',
                      doc='Channel charset')
-    file_format = Options('irclogs', 'file_format', '#channel.%Y-%m-%d.log',
-                          doc='Format of a logfile for a given day. Must '
-                              'include %Y, %m and %d. Example: '
-                              '#channel.%Y-%m-%d.log')
+    file_format = Option('irclogs', 'file_format', '#channel.%Y-%m-%d.log',
+                         doc='Format of a logfile for a given day. Must '
+                             'include %Y, %m and %d. Example: '
+                             '#channel.%Y-%m-%d.log')
     path = Option('irclogs', 'path', '',
                   doc='The path where the irc logfiles are')
     navbutton = Option('irclogs', 'navigation_button', '',
@@ -189,11 +189,6 @@ class IrclogsPlugin(Component):
         add_stylesheet(req, 'irclogs/style.css')
 
         file_re = self._get_file_re()
-        file_re = re.compile(r'^%s\.(?P<year>\d{4})-(?P<month>\d{2})'
-                             r'-(?P<day>\d{2})%s$' % (
-            re.escape(self.prefix),
-            re.escape(self.suffix)
-        )
 
         context = {}
         entries = {}
