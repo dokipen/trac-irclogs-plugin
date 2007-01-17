@@ -29,10 +29,10 @@ class IrclogsPlugin(Component):
     )
     charset = Option('irclogs', 'charset', 'utf-8',
                      doc='Channel charset')
-    prefix = Option('irclogs', 'prefix', '',
-                    doc='The prefix for the irc logfiles')
-    suffix = Option('irclogs', 'suffix', 'log',
-                    doc='The filename extension. defaults to "log"')
+    file_format = Options('irclogs', 'file_format', '#channel.%Y-%m-%d.log',
+                          doc='Format of a logfile for a given day. Must '
+                              'include %Y, %m and %d. Example: '
+                              '#channel.%Y-%m-%d.log')
     path = Option('irclogs', 'path', '',
                   doc='The path where the irc logfiles are')
     navbutton = Option('irclogs', 'navigation_button', '',
@@ -43,6 +43,20 @@ class IrclogsPlugin(Component):
     def _to_unicode(self, iterable):
         for line in iterable:
             yield to_unicode(line, self.charset)
+
+    def _get_file_re(self):
+        return re.compile(r'^%s$' % re.escape(self.file_format)
+              .replace('\\%Y', '(?P<year>\d{4})')
+              .replace('\\%m', '(?P<month>\d{2})')
+              .replace('\\%d', '(?P<day>\d{2})')
+        )
+
+    def _get_filename(self, year, month, day):
+        return os.path.join(self.path, self.file_format
+                .replace('%Y', str(year))
+                .replace('%m', str(month))
+                .replace('%d', str(day))
+        )
 
     def _render_lines(self, iterable):
         dummy = lambda: {}
@@ -174,8 +188,12 @@ class IrclogsPlugin(Component):
         req.perm.assert_permission('IRCLOGS_VIEW')
         add_stylesheet(req, 'irclogs/style.css')
 
+        file_re = self._get_file_re()
         file_re = re.compile(r'^%s\.(?P<year>\d{4})-(?P<month>\d{2})'
-                             r'-(?P<day>\d{2})\.log$' % re.escape(self.prefix))
+                             r'-(?P<day>\d{2})%s$' % (
+            re.escape(self.prefix),
+            re.escape(self.suffix)
+        )
 
         context = {}
         entries = {}
@@ -224,13 +242,8 @@ class IrclogsPlugin(Component):
         context['cal'] = self._generate_calendar(req, entries)
 
         if req.args['day'] is not None:
-            logfile = os.path.join(self.path, '%s.%s-%s-%s.%s' % (
-                self.prefix,
-                req.args['year'],
-                req.args['month'],
-                req.args['day'],
-                self.suffix
-            ))
+            logfile = self._get_filename(req.args['year'], req.args['month'],
+                                         req.args['day'])
             context['day'] = req.args['day']
             context['month'] = req.args['month']
             context['year'] = req.args['year']
