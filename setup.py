@@ -17,7 +17,7 @@ setup(
         'License :: OSI Approved :: BSD License',
     ],
     package_data={
-        'irclogs' : ['templates/*.cs', 'htdocs/*.css']
+        'irclogs' : ['templates/*.html', 'htdocs/*.css']
     },
     entry_points = {
         'trac.plugins': ['irclogs = irclogs']
