@@ -1,0 +1,95 @@
+div.irclogs div.wrapper {
+    padding: 1em;
+}
+
+div.irclogs table.irclog {
+    border-collapse: collapse;
+    border: 2px solid #ccc;
+    margin-top: 1em;
+    width: 100%;
+}
+
+div.irclogs table.irclog td {
+    padding: 0.3em;
+    border: 1px dotted #bbb;
+}
+
+div.irclogs table.irclog td.time {
+    text-align: left;
+    font-family: monospace;
+    color: #aaa;
+    background-color: #f2f2f2;
+    width: 2.3em;
+    vertical-align: topM
+}
+
+div.irclogs table.irclog td.time a {
+    color: #aaa;
+    text-decoration: none;
+}
+
+div.irclogs table.irclog td.left {
+    text-align: right;
+    font-family: monospace;
+    width: 4em;
+    vertical-align: top;
+}
+
+div.irclogs table.irclog td.right {
+    text-align: left;
+    font-family: monospace;
+    white-space: pre-wrap;
+    white-space: -moz-pre-wrap;
+    white-space: -pre-wrap;
+    white-space: -o-pre-wrap;
+    word-wrap: break-word;
+    _white-space: pre;
+    vertical-align: top;
+}
+
+div.irclogs table.irclog tr.action td.left,
+div.irclogs table.irclog tr.action td.right {
+    color: #0c0;
+    font-style: italic;
+}
+
+div.irclogs table.irclog tr.server td.left,
+div.irclogs table.irclog tr.server td.right {
+    color: #555;
+    font-style: italic;
+}
+
+div.irclogs .nick-0 {color: #555555; }
+div.irclogs .nick-1 {color: #2F8C74; }
+div.irclogs .nick-2 {color: #4545E6; }
+div.irclogs .nick-3 {color: #B037B0; }
+div.irclogs .nick-4 {color: #C33B3B; }
+div.irclogs .nick-5 {color: #1A5555; }
+div.irclogs .nick-6 {color: #D9A641; }
+div.irclogs .nick-7 {color: #3DCC3D; }
+div.irclogs .nick-8 {color: #C73232; }
+
+
+div.irclogs table .has_log {
+    background-color: #f2f2f2;
+}
+div.irclogs table .today {
+    background-color: #ddd;
+    font-weight: bold;
+}
+
+div.irclogs table.minical {
+    background-color: white;
+    border: 2px solid #ccc;
+    padding: 1em;
+    float: right;
+}
+
+div.irclogs table.minical tr.head th {
+    font-weight: bold;
+    border-bottom: 2px solid #ddd;
+}
+
+div.irclogs table.minical tr.days {
+    font-size: 0.8em;
+}
