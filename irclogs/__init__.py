@@ -182,7 +182,6 @@ class IrclogsPlugin(Component):
 
     # IRequestHandler methods
     def match_request(self, req):
-        print "test"
         m = self._url_re.search(req.path_info)
         if m is None:
             return False
