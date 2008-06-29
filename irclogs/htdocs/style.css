@@ -93,3 +93,53 @@ div.irclogs table.minical tr.head th {
 div.irclogs table.minical tr.days {
     font-size: 0.8em;
 }
+
+a.dp-choose-date {
+        width: 16px;
+	height: 16px;
+	padding: 0;
+	margin: 5px 0px;
+	text-indent: -2000px;
+	overflow: hidden;
+	background: url(calendar.png) no-repeat; 
+}
+a.dp-choose-date.dp-disabled {
+	background-position: 0 -20px;
+	cursor: default;
+	text-size: 10px;
+}
+input.dp-applied {
+	display: none;
+}
+
+div.irclogs div.navcal {
+	position: relative;
+	float: right;
+	top: -15px;
+}
+
+div.navcal a.previous {
+	margin-right: 20px;
+}
+
+div.navcal a.next {
+	margin-left: 20px;
+}
+
+div.navcal a.link-datepicker {
+	margin-right: 4px;
+}
+
+div.irclogs input#showactions {
+	float: left;
+}
+div#irclog-controls {
+  display: none;
+  padding-left: 10px; 
+  padding-right: 10px;
+  margin-bottom: -15px;
+}
+.irclogs tr.server, .irclogs tr.hidden_user {
+  display:none;
+}
+

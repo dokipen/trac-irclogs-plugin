@@ -17,9 +17,12 @@ setup(
         'License :: OSI Approved :: BSD License',
     ],
     package_data={
-        'irclogs' : ['templates/*.html', 'htdocs/*.css']
+        'irclogs' : ['templates/*.html', 'htdocs/*.css', 
+                     'htdocs/*.js', 'htdocs/*.png']
     },
     entry_points = {
-        'trac.plugins': ['irclogs = irclogs']
-    }
+        'trac.plugins': ['irclogs = irclogs'],
+        'console_scripts': ['update-irc-search = irclogs.update_irc_search',],
+    },
+    install_requires = ['pyndexter>=0.2'],
 )

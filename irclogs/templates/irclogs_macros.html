@@ -1,0 +1,16 @@
+<div xmlns="http://www.w3.org/1999/xhtml"
+     xmlns:xi="http://www.w3.org/2001/XInclude"
+     xmlns:py="http://genshi.edgewall.org/" py:strip="">
+
+  <py:def function="irclog_table(lines, extra_classes='', page_href='', missing=False)">
+      <table class="irclog ${extra_classes}" py:if="not missing">
+        <tr py:for="line in lines" class="${line.mode} ${line.hidden_user}" >
+          <td class="time">[<a href="${page_href}#${line.utc_dt}" title="${line.utc_dt}" id="${line.utc_dt}">${line.time}</a>]</td>
+          <td class="left" py:if="line.mode in ('action', 'server')">*</td>
+          <td class="left" py:if="line.mode == 'channel'">&lt;<span class="${line.nickcls}">${line.nickname}</span>&gt;</td>
+          <td class="right">${line.mode != 'channel' and line.nickname + ' ' or '' }${line.text}</td>
+        </tr>
+      </table>
+  </py:def>
+
+</div>

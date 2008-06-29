@@ -1,0 +1,13 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      py:strip="True">
+
+  <xi:include href="irclogs_macros.html" />
+
+<div class="irclogs quote">
+Chat Excerpt from <a href="${href('irclogs',excerpt_date.year,excerpt_date.month,excerpt_date.day)}#${utc_dt}">${excerpt_date.month}/${excerpt_date.day}/${excerpt_date.year}</a>
+
+${irclog_table(lines,page_href=href('irclogs',excerpt_date.year,excerpt_date.month,excerpt_date.day))}
+</div>
+</html>

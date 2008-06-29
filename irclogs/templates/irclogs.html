@@ -4,42 +4,48 @@
       xmlns:py="http://genshi.edgewall.org/"
       xmlns:xi="http://www.w3.org/2001/XInclude">
   <xi:include href="layout.html" />
-  <head>
-    <title>IRC Logs</title>
-  </head>
-  <body>
-    <div id="content" class="irclogs">
-      <h1>IRC Logs</h1>
-      <table class="minical">
-        <tr class="head">
-          <th colspan="7">${cal.year} ${cal.month}</th>
-        </tr>
-        <tr class="days">
-          <th>Mo</th>
-          <th>Tu</th>
-          <th>We</th>
-          <th>Th</th>
-          <th>Fr</th>
-          <th>Sa</th>
-          <th>So</th>
-        </tr>
-        <tr class="week" py:for="week in cal.weeks">
-          <py:for each="day in week">
-            <td py:if="day.empty" class="empty">&nbsp;</td>
-            <td py:if="not day.empty" class="${day.has_log and 'has' or 'no'}_log">
-              <a href="${day.href}">${day.caption}</a>
-            </td>
-          </py:for>
-        </tr>
-        <tr class="nav">
-         <td><a href="${cal.prev_year.href}">◀</a></td>
-         <td><a href="${cal.prev_month.href}">◂</a></td>
-         <td colspan="3">&nbsp;</td>
-         <td><a href="${cal.next_month.href}">▸</a></td>
-         <td><a href="${cal.next_year.href}">▶</a></td>
-        </tr>
-      </table>
-
+  <xi:include href="irclogs_macros.html" />
+  
+ <head>
+ <title>Team Chat Logs</title>
+</head>
+  <body> 
+  <div id="content" class="irclogs">
+      <h1>Team Chat Logs</h1>
+      <div id="content" class="error" py:if="error">
+        <div class="message">${message}</div>
+      </div>
+      <div id="nojscal" style="display: block;">
+        <table class="minical">
+          <tr class="head">
+            <th colspan="7">${year} ${int_month}</th>
+          </tr>
+          <tr class="days">
+            <th>Mo</th>
+            <th>Tu</th>
+            <th>We</th>
+            <th>Th</th>
+            <th>Fr</th>
+            <th>Sa</th>
+            <th>Su</th>
+          </tr>
+          <tr class="week" py:for="week in cal.weeks">
+            <py:for each="day in week">
+              <td py:if="day.empty" class="empty">&nbsp;</td>
+              <td py:if="not day.empty" class="${day.has_log and 'has' or 'non'}_log">
+                <a href="${day.href}">${day.caption}</a>
+              </td>
+            </py:for>
+          </tr>
+          <tr class="nav">
+            <td><a href="${cal.prev_year.href}">&lt;&lt;</a></td>
+            <td><a href="${cal.prev_month.href}">&lt;</a></td>
+            <td colspan="3">&nbsp;</td>
+            <td><a href="${cal.next_month.href}">&gt;</a></td>
+            <td><a href="${cal.next_year.href}">&gt;&gt;</a></td>
+          </tr>
+        </table>
+      </div>
       <py:choose test="viewmode">
         <py:when test="'years'">
           <h2>Years</h2>
@@ -56,26 +62,37 @@
         <py:when test="'days'">
           <h2>Logs for ${month} ${year}</h2>
           <ul class="days">
-            <li py:for="day in days"><a href="${day.href}">${day.caption}. ${month} ${year}</a></li>
+            <li py:for="day in days"><a href="${day.href}">${month} ${day.caption}, ${year}</a></li>
           </ul>
         </py:when>
-        <py:when test="'day'">
-          <h2>${day}. ${month} ${year}</h2>
+        <py:when test="'day'"> 
+          <h2>${month_name} ${day}, ${year}</h2>
+          <div id="irclog-controls">
+            <input type="checkbox" id="showactions" py:if="not missing" style="display: none;"></input>
+            <div id="jscal" style="display: none;">
+              <div class="navcal">
+                <a href="#" class="previous">&lt;&lt;</a> 
+                <a class="link-datepicker" href="#">Select Date</a><input class="date-pick" value="${current_date}"/>
+                <a href="#" class="next">&gt;&gt;</a>
+              </div>
+            </div>
+          <br style="clear:both"/>
+          </div>
           <div py:if="missing">
             No logfile for this day.
           </div>
-          <table class="irclog" py:if="not missing">
-            <tr py:for="line in lines" class="${line.mode}">
-              <td class="time">[<a href="#T${line.time}" id="${line.time}">${line.time}</a>]</td>
-              <td class="left" py:if="line.mode in ('action', 'server')">*</td>
-              <td class="left" py:if="line.mode == 'channel'">&lt;<span class="${line.nickcls}">${line.nickname}</span>&gt;</td>
-              <td class="right">${line.mode != 'channel' and line.nickname + ' ' or '' }${line.text}</td>
-            </tr>
-          </table>
+          ${irclog_table(lines,'searchable')}
         </py:when>
       </py:choose>
+      <script type="text/javascript">
+        jQuery(document).ready(function($) {
+            irclogs_setup('${current_date}','${start_date}','${int_month}','${req.base_path}');
+            $('#jscal')[0].style.display = 'block';
+            $('#nojscal')[0].style.display = 'none';
+            $('#showactions')[0].style.display = 'block';
+        });
+      </script>        
       <br style="clear:both" />
     </div>
   </body>
 </html>
-

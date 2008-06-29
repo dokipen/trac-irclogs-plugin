@@ -1,0 +1,10 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:py="http://genshi.edgewall.org/"
+      xmlns:xi="http://www.w3.org/2001/XInclude">
+  <xi:include href="irclogs_macros.html" />
+
+<div py:if="missing" style="padding:5px;">No chat logs for today</div>
+<div class="irclog">
+${irclog_table(lines,page_href=href('irclogs',year,month,day))}
+</div>
+</html>
