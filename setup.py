@@ -22,7 +22,7 @@ setup(
     },
     entry_points = {
         'trac.plugins': ['irclogs = irclogs'],
-        'console_scripts': ['update-irc-search = irclogs.update_irc_search',],
+        'console_scripts': ['update-irc-search = irclogs.console:update_irc_search',],
     },
     install_requires = ['pyndexter>=0.2'],
 )
