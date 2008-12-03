@@ -24,5 +24,5 @@ setup(
         'trac.plugins': ['irclogs = irclogs'],
         'console_scripts': ['update-irc-search = irclogs.console:update_irc_search',],
     },
-    install_requires = ['pyndexter>=0.2'],
+    install_requires = ['pyndexter>=0.2', 'pytz>=2005m'],
 )
