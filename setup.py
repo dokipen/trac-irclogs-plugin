@@ -1,7 +1,7 @@
 from setuptools import setup
 
 PACKAGE = 'irclogs'
-VERSION = '0.2'
+VERSION = '0.3'
 
 setup(
     name=PACKAGE,
@@ -24,5 +24,6 @@ setup(
         'trac.plugins': ['irclogs = irclogs'],
         'console_scripts': ['update-irc-search = irclogs.console:update_irc_search',],
     },
-    install_requires = ['pyndexter>=0.2', 'pytz>=2005m'],
+    install_requires = ['pytz>=2005m'],
+    # optional pyndexter
 )
