@@ -7,7 +7,6 @@
 import os
 import sys
 import shutil
-import pyndexter
 from pyndexter import Framework, READWRITE
 from pyndexter.util import quote
 

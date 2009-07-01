@@ -19,8 +19,6 @@ from trac.web.main import IRequestHandler
 from trac.util.html import escape, html, Markup
 from trac.util.text import to_unicode
 from trac.util.datefmt import utc
-from pyndexter import Framework, READWRITE
-from pyndexter.util import quote
 
 from genshi.builder import tag
 
