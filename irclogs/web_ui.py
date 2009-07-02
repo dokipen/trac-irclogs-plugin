@@ -249,11 +249,11 @@ class IrcLogsView(Component):
 
     def process_request(self, req):
         req.perm.assert_permission('IRCLOGS_VIEW')
-        add_stylesheet(req, 'irclogs/style.css')
-        add_stylesheet(req, 'irclogs/datePicker.css')
-        add_script(req, 'irclogs/date.js')
-        add_script(req, 'irclogs/jquery.datePicker.js')
-        add_script(req, 'irclogs/irclogs.js')
+        add_stylesheet(req, 'irclogs/css/style.css')
+        add_stylesheet(req, 'irclogs/css/datePicker.css')
+        add_script(req, 'irclogs/js/date.js')
+        add_script(req, 'irclogs/js/jquery.datePicker.js')
+        add_script(req, 'irclogs/js/irclogs.js')
         file_re = self._get_file_re()
 
         context = {}

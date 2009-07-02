@@ -23,8 +23,8 @@ class IrcLogLiveMacro(WikiMacroBase):
             return system_message('Incorrect arguments: ' 
                 'Must be of the format (poll frequency, lines to display)')
 
-        add_stylesheet(formatter.req, 'irclogs/style.css')
-        add_script(formatter.req, 'irclogs/jquery.timer.js')
+        add_stylesheet(formatter.req, 'irclogs/css/style.css')
+        add_script(formatter.req, 'irclogs/js/jquery.timer.js')
 
         data = Chrome(self.env).populate_data(formatter.req, 
                                     {'poll_frequency':int(poll_frequency)*1000,
@@ -68,7 +68,7 @@ class IrcLogQuoteMacro(WikiMacroBase):
                                     and line['mode'] == 'channel'
                                     and line['hidden_user'] != 'hidden_user']
         
-        add_stylesheet(formatter.req, 'irclogs/style.css')
+        add_stylesheet(formatter.req, 'irclogs/css/style.css')
         data = Chrome(self.env).populate_data(formatter.req, 
                                     {'lines':filtered_lines[:offset],
                                      'excerpt_date':d.groupdict(),
