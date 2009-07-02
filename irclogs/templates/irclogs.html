@@ -65,7 +65,7 @@
             <li py:for="day in days"><a href="${day.href}">${month} ${day.caption}, ${year}</a></li>
           </ul>
         </py:when>
-        <py:when test="'day'"> 
+        <py:otherwise> 
           <h2>${month_name} ${day}, ${year}</h2>
           <div id="irclog-controls">
             <input type="checkbox" id="showactions" py:if="not missing" style="display: none;"></input>
@@ -82,7 +82,7 @@
             No logfile for this day.
           </div>
           ${irclog_table(lines,'searchable')}
-        </py:when>
+        </py:otherwise>
       </py:choose>
       <script type="text/javascript">
         jQuery(document).ready(function($) {
