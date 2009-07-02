@@ -1,31 +1,14 @@
 """
-Parse logs from files into structured data.  This is based on Marius Gedminas'
+Parse logs from files into structured data.  inspired by Marius Gedminas'
 port of Jeff Waugh perl script.
 """
 
 # Copyright (c) 2009, Robert Corsaro
-# Copyright (c) 2005--2008, Marius Gedminas 
-# Copyright (c) 2000, Jeffrey W. Waugh
 
-# Trac port:
-#   Robert Corsaro <rcorsaro@optaros.com>
-# Python port:
-#   Marius Gedminas <marius@pov.lt>
-# Original Author:
-#   Jeff Waugh <jdub@perkypants.org>
-# Contributors:
-#   Rick Welykochy <rick@praxis.com.au>
-#   Alexander Else <aelse@uu.net>
-#   Ian Weller <ianweller@gmail.com>
-#
-# Released under the terms of the GNU GPL
-# http://www.gnu.org/copyleft/gpl.html
-
-# Differences:
-#
-# Just parsing code is stripped out for this trac module and many
-# parameters are now configurable.  Defaults should work with Supybot logs.
 import re
+from time import strptime
+from datetime import datetime
+from pytz import timezone
 
 from trac.core import *
 from trac.config import Option
@@ -39,136 +22,191 @@ class FileIRCLogProvider(Component):
 
     implements(IIRCLogsProvider)
 
-    log_timezone = Option('irclogs', 'file_log_timezone', 'utc',
-        doc="""Timezone that the files are logged in.  This is needed
-        so we can convert the incoming date to the date in the irc
-        log file names.  And find all files in the range.""")
+    format = Option('irclogs', 'format', 'supy', doc="Default format")
 
-    path_format = Option('irclogs', 'file_path_format', None,
+    timezone = Option('irclogs', 'timezone', 'utc',
+        doc="""Default timezone that the files are logged in.  This is needed
+        so we can convert the incoming date to the date in the irc
+        log file names.  And find all files in the range. This can be 
+        overridden by the format.
+        """)
+
+    basepath = Option('irclogs', 'basepath', '/var/lib/irclogs',
+        doc="""Default basepath for logs.  Can be overridden by format.""")
+
+    path = Option('irclogs', 'path', '%(channel)s/%(channel)s.%Y-%m-%d.log',
         doc="""
-       Format for complete path to log files.  Include parameters:
+       Default format for complete path to log files.  Include parameters:
           %Y, %m, %d, etc. : all strftime formatting supported
           %(network)s      : network
           %(channel)s      : channel
        Example:
-          /var/irclogs/ChannelLogger/%(channel)s/%(channel)s.%Y-%m-%d.log
-          """)
+          %(channel)s/%(channel)s.%Y-%m-%d.log
+          %(channel)s.%Y%m%d.log
 
-    time_format = Option('irclogs', 'time_format', '%Y-%m-%dT%H%M%S',
-        doc="""Format to use when parsing timestamp in log files.
-        For gozerbot logs, change the 'T' to ' ' (space).""")
+       Can be overridden by format.""")
+
+    timestamp_format = Option('irclogs', 'timestamp_format', '%Y-%m-%dT%H:%M:%S',
+        doc="""Default format to use when parsing timestamp to datetime. Can 
+        be overridden by format.""")
 
     timestamp_regex = Option('irclogs', 'timestamp_regex', 
         '(?P<timestamp>\d{4}-\d{2}-\d{2}.\d{2}:\d{2}:\d{2})',
-        doc="""Partial regex used at the beginning of all other regexes. 
-        It is only used if explicitly included in the other regexes as
-        %(timestamp_regex)s
+        doc="""Default partial regex used at the beginning of all other 
+        regexes.  It is only used if explicitly included in the other regexes 
+        as %(timestamp_regex)s
 
         ex. 2009-05-20T10:10:10
         ex. 2009-05-20 10:10:10
-        """)
 
-    comment_regex = Option('irclogs', 'nick_regex', 
+        Can be overriedden by format.""")
+
+    comment_regex = Option('irclogs', 'comment_regex', 
         '^%(timestamp_regex)s[ |:]*'\
         '(?P<message><(?P<nick>[^>]+)>\s(?P<comment>.*))$', 
-        doc="""Matches COMMENT lines. 
+        doc="""Default match for COMMENT lines. 
 
         ex. 2009-05-20T10:10:10  <nick> how's it going?
         ex. 2009-05-20 10:10:10 | <nick> how's it going?
-        """)
+        
+        Can be overridden by format.""")
 
     action_regex = Option('irclogs', 'action_regex',
         '^%(timestamp_regex)s[ |:]*'\
         '(?P<message>\*\s(?P<nick>[^ ]+)\s(?P<action>.*))$',
-        doc="""Matches ACTION lines. 
+        doc="""Default match for ACTION lines. 
 
         ex. 2009-05-20T10:10:10  * nick hits someone with a fish
         ex. 2009-05-20 10:10:10 | * nick hits someone with a fish
-        """)
+
+        Can be overridden by format.""")
 
     join_regex = Option('irclogs', 'join_regex',
         '^%(timestamp_regex)s[ |:]*'\
         '(?P<message>\*{0,3}\s(?P<nick>[^ ]+)\shas\sjoined.*)$',
-        doc="""Matches JOIN lines.
+        doc="""Default match on JOIN lines.
 
         ex. 2009-05-20T10:10:10  *** nick has joined #channel
         ex. 2009-05-20 10:10:10 | nick has joined
-        """)
+
+        Can be overridden by format.""")
 
     part_regex = Option('irclogs', 'part_regex',
         '^%(timestamp_regex)s[ |:]*'\
         '(?P<message>\*{0,3}\s(?P<nick>[^ ]+).*\shas\sleft.*)$',
-        doc="""Matches PART lines.
+        doc="""Default match on PART lines.
 
         ex. 2009-05-20T10:10:10  *** nick has left #channel
         ex. 2009-05-20 10:10:10 | nick has left
-        """)
+
+        Can be overridden by format.""")
 
     quit_regex = Option('irclogs', 'quit_regex',
         '^%(timestamp_regex)s[ |:]*'\
         '(?P<message>\*{0,3}\s(?P<nick>[^ ]+).*\shas\squit.*)$',
-        doc="""Matches QUIT lines.
+        doc="""Default match QUIT lines.
 
         ex. 2009-05-20T10:10:10  *** nick has quit IRC
         ex. 2009-05-20 10:10:10 | nick has quit: I'm outta he--ya
-        """)
+
+        Can be overridden by format.""")
 
     kick_regex = Option('irclogs', 'kick_regex',
         '^%(timestamp_regex)s[ |:]*'\
         '(?P<message>\*{0,3}\s(?P<kicked>[^ ]+)\swas\skicked\sby\s(?P<nick>[^ ]+).*)$',
-        doc="""Matches KICK lines.
+        doc="""Default match KICK lines.
 
         ex. 2009-05-20T10:10:10  *** kickedguy was kicked by nick
         ex. 2009-05-20 10:10:10 | kickedguy was kicked by nick
-        """)
+
+        Can be overridden by format.""")
 
     mode_regex = Option('irclogs', 'mode_regex',
         '^%(timestamp_regex)s[ |:]*'\
         '(?P<message>\*{0,3}\s(?P<nick>[^ ]+)\ssets\smode:\s(?P<mode>.+))$',
-        doc="""Matches MODE lines.
+        doc="""Default match on MODE lines.
 
         ex. 2009-05-20T10:10:10  *** nick sets mode: +v guy
         ex. 2009-05-20 10:10:10 | nick sets mode: +v guy
-        """)
+
+        Can be overridden by format.""")
 
     topic_regex = Option('irclogs', 'topic_regex',
         '^%(timestamp_regex)s[ |:]*'\
-        '(?P<message>\*{0,3}\s(?P<nick>[^ ]+)\schanges\stopic\sto\s"?(?P<topic>.+)"?)$',
-        doc="""Matches TOPIC lines.
+        '(?P<message>\*{0,3}\s(?P<nick>[^ ]+)\schanges\stopic\sto\s"(?P<topic>.+)")$',
+        doc="""Default match on TOPIC lines.
 
         ex. 2009-05-20T10:10:10  *** nick changes topic to "new topic"
         ex. 2009-05-20 10:10:10 | nick changes topic to "new topic"
-        """)
 
-    nick_regex = Option('irclogs', 'nickchange_regex',
-            '^%(timestamp_regex)s\s{2}(?P<message>\*{3}\s(?P<nick>.*)\s.*now\sknown\sas(?P<newnick>.*))$',
-            doc="""Matches NICK
-            """)
-    notice_regex = Option('irclogs', 'notice_regex', "timestamp  -nick- message")
+        Can be overridden by format.""")
+
+    nick_regex = Option('irclogs', 'nick_regex',
+        '^%(timestamp_regex)s[ |:]*'\
+                '(?P<message>\*{0,3}\s(?P<nick>[^ ]+)(?:\sis)\s.*now\sknown\sas\s(?P<newnick>.*))$',
+        doc="""Default match on NICK lines.
+
+        ex. 2009-05-20T10:10:10  *** nick is now known as nick2
+        ex. 2009-05-20 10:10:10 | nick is now known as nick2"
+
+        Can be overridden by format.""")
+
+    notice_regex = Option('irclogs', 'notice_regex',
+        '^%(timestamp_regex)s[ |:]*'\
+        '(?P<message>-(?P<nick>[^-]+)-\s(?P<comment>.*))$',
+        doc="""Default match on NOTICE lines.
+
+        ex. 2009-05-20T10:10:10  -nick- hello everyone! 
+        ex. 2009-05-20 10:10:10 | -nick- hello everyone!"
+
+        Can be overridden by format.""")
 
     match_order = Option('irclogs', 'match_order',
-            'comment part join quit action kick mode topic',
-            doc="""Order that lines are checked against.  This matters if a 
-            line could match multiple regexes.""")
+            'comment part join quit action kick mode topic nick notice',
+            doc="""Default order that lines are checked against.  This matters 
+            if a line could match multiple regexes.  Can be overridden by 
+            format.""")
 
-    def parse_lines(self, lines):
-        match_list = re.split('[,|: ]+', self.match_order)
+    Option('irclogs', 'format.gozer.basepath', '/home/gozerbot/.gozerbot/')
+    Option('irclogs', 'format.gozer.path', 'logs/trac/%(channel)s.%Y%m%d.log')
+    Option('irclogs', 'format.gozer.timestamp_format', '%Y%m%d %H%M%S')
+
+    def default_format(self):
+        format = {
+                'basepath': self.basepath,
+                'path': self.path,
+                'match_order': self.match_order,
+                'timestamp_format': self.timestamp_format,
+                'timestamp_regex': self.timestamp_regex,
+        }
+        match_order = re.split('[,|: ]+', format['match_order'])
+        for mtype in match_order:
+            regex_name = "%s_regex"%(mtype) 
+            format[regex_name] = self.__getattribute__(regex_name)
+        return format
+
+    def format(self, name):
+        pass
+
+    def parse_lines(self, lines, format=None, tz=None):
+        if not format: 
+            format = self.default_format()
+        if not tz:
+            tz = timezone(self.timezone)
+
         def _map(x):
-            regex_string = self.__getattribute__('%s_regex'%(x,))
+            regex_string = format['%s_regex'%(x)]
             regex_string = regex_string%({
-                'whoha': 'hello',
-                'timestamp_regex': self.timestamp_regex
+                'timestamp_regex': format['timestamp_regex']
             })
             regex = re.compile(regex_string)
-            return {
-                    'type': x, 
-                    'regex': regex
-            }
-       
-        def _parse_time(time):
-            return 1
+            return { 'type': x, 'regex': regex }
+        match_order = re.split('[,|: ]+', format['match_order'])
+        matchers = map(_map, match_order)
 
-        matchers = map(_map, match_list)
+        def _parse_time(time):
+            t = strptime(time, format['timestamp_format'])
+            return datetime(*t[:6]).replace(tzinfo=tz)
 
         for line in lines:
             line = line.rstrip('\r\n')
