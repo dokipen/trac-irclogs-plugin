@@ -93,6 +93,11 @@
         <py:if test="year and month and day">
           date.setFullYear(${year}, ${month}-1, ${day});
         </py:if>
+        <py:if test="firstYear and firstMonth and firstDay">
+          minDate = new Date();
+          minDate.setFullYear(${firstYear}, ${firstMonth}-1, ${firstDay})
+        </py:if>
+
         jQuery(function($) {
           jQuery('#date-pick').datepicker({
             dateFormat: 'yy/mm/dd/',
@@ -107,7 +112,7 @@
             changeYear: true,
             maxDate: new Date()
             <py:if test="firstYear and firstMonth and firstDay">
-              , minDate: new Date().setFullYear(${firstYear}, ${firstMonth}-1, ${firstDay}) 
+              , minDate: minDate
             </py:if>
           });
           $('#date-pick-trigger').bind('click', function() {

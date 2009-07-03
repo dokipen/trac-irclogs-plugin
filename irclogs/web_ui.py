@@ -262,8 +262,9 @@ class IrcLogsView(Component):
         context['year'] = req.args['year']
         context['day'] = req.args['day']
         context['month'] = req.args['month']
-        context['firstDay'] = 1
-        context['firstMonth'] = 1
+        context['month_name'] = month_name[int(req.args['month'])]
+        context['firstDay'] = 3
+        context['firstMonth'] = 8
         context['firstYear'] = 1977
 
         # list all log files to know what dates are available
