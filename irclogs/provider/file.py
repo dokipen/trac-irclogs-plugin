@@ -22,6 +22,8 @@ class FileIRCLogProvider(Component):
 
     implements(IIRCLogsProvider)
 
+    # not to be confused with default_format(), which doesn't consider
+    # a named format.
     format = Option('irclogs', 'format', 'supy', doc="Default format")
 
     timezone = Option('irclogs', 'timezone', 'utc',
@@ -172,6 +174,10 @@ class FileIRCLogProvider(Component):
     Option('irclogs', 'format.gozer.timestamp_format', '%Y%m%d %H%M%S')
 
     def default_format(self):
+        """All default format options.  A potential bug is if the default
+        format match_order doesn't include a $name_regex, but a custom 
+        format does, and the $name_regex is specified in the defaults.  In 
+        this case it would never be read."""
         format = {
                 'basepath': self.basepath,
                 'path': self.path,
@@ -179,6 +185,7 @@ class FileIRCLogProvider(Component):
                 'timestamp_format': self.timestamp_format,
                 'timestamp_regex': self.timestamp_regex,
         }
+        # grab the match order, and then all the assoc. regexs
         match_order = re.split('[,|: ]+', format['match_order'])
         for mtype in match_order:
             regex_name = "%s_regex"%(mtype) 
@@ -186,9 +193,51 @@ class FileIRCLogProvider(Component):
         return format
 
     def format(self, name):
-        pass
+        """Named formats override default options.  Default options are 
+        declared in the config file on the first level.
 
-    def parse_lines(self, lines, format=None, tz=None):
+        [irclogs]
+        basepath = /var/irclogs/
+        timestamp_regex = 'blah'
+
+        format options are prefixed with 'format.$name.'.
+
+        [irclogs]
+        format.gozer.basepath = /home/gozerbot/.gozerbot/logs/trac/
+        format.gozer.timestamp_regex = 'otherblah'
+
+        This method will return all options for a named format."""
+        options = self.config.options('irclogs')
+
+        # we only want options for this format
+        _filter = lambda pair: pair[0].startswith('format.%s.'%(name))
+        _map = lambda pair: (re.sub('^format.%s.'%(name), '', pair[0]), pair[1])
+                
+        format_options = dict(map(_map, filter(_filter, options)))
+        ret_format = self.default_format()
+        ret_format.update(format_options)
+        return ret_format
+
+    def parse_lines(self, lines, format=None, tz=None, target_tz=None):
+        """Parse irc log lines into structured data.  format should
+        contain all information about parsing the lines.
+          * lines: all irc lines, any generator or list will do
+          * format: optional dict, will use default_format() if None
+              * match_order:      order of regexes to check for line.
+              * *_regex:          the regexes referenced by match_order.
+              * timestamp_format: format used by strptime to parse timestamp.
+              * timestamp_regex:  regex used to parse timestamp out of line,
+                                  this is reference by the optionally included
+                                  in the other _regex parameters as 
+                                  %(timestamp_regex)s and is seperate as a 
+                                  convenience.
+
+          * tz: optional timezone of logfile timestamps.  Will use 
+                self.timezone if None.
+          * target_tz: optional target timezone.  This is the timezone of the 
+                return data timedate objects.  Will not convert to target_tz 
+                if None.
+        """
         if not format: 
             format = self.default_format()
         if not tz:
@@ -206,7 +255,10 @@ class FileIRCLogProvider(Component):
 
         def _parse_time(time):
             t = strptime(time, format['timestamp_format'])
-            return datetime(*t[:6]).replace(tzinfo=tz)
+            dt = datetime(*t[:6]).replace(tzinfo=tz)
+            if target_tz:
+                dt = target_tz.normalize(dt.astimezone(target_tz))
+            return dt
 
         for line in lines:
             line = line.rstrip('\r\n')

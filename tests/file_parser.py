@@ -28,6 +28,31 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             '* SOME SPECIAL MESSAGE *',
         )
 
+    def test_target_tz(self):
+        tz = timezone('America/New_York')
+        results = [i for i in self.out.parse_lines(
+            self.supylines, 
+            target_tz=tz
+        )]
+
+        def _date(d):
+            t = strptime(d, "%Y%m%d%H%M%S")
+            dt = datetime(*t[:6]).replace(tzinfo=tz)
+            return tz.normalize(dt)
+
+        self.assertEquals(_date('20080502212819'), results[0]['timestamp'])
+        self.assertEquals(_date("20080502213022"), results[1]['timestamp'])
+        self.assertEquals(_date("20080502213025"), results[2]['timestamp'])
+        self.assertEquals(_date("20080502213026"), results[3]['timestamp'])
+        self.assertEquals(_date("20080502213027"), results[4]['timestamp'])
+        self.assertEquals(_date("20080502213127"), results[5]['timestamp'])
+        self.assertEquals(_date("20080502213227"), results[6]['timestamp'])
+        self.assertEquals(_date("20080502213327"), results[7]['timestamp'])
+        self.assertEquals(_date("20080502213427"), results[8]['timestamp'])
+        self.assertEquals(_date("20080502213527"), results[9]['timestamp'])
+        self.assertEquals(_date("20080502213627"), results[10]['timestamp'])
+        self.assertEquals(_date("20080502213727"), results[11]['timestamp'])
+
     def test_parse_supybot(self):
         results = [i for i in self.out.parse_lines(self.supylines)]
 
@@ -107,8 +132,49 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         self.assertEquals('other', results[12]['type'])
         self.assertEquals('* SOME SPECIAL MESSAGE *', results[12]['message'])
     
-    def test_gozer_options(self):
-        print [i for i in self.out.config.sections()]
+    def test_default_format(self):
+        df = self.out.default_format()
+        self.assertEquals('/var/lib/irclogs', df['basepath'])
+        self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['path'])
+        self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
+        self.assert_(df['timestamp_regex'])
+        self.assert_(df['match_order'])
+        for m in re.split('[ |:,]+', df['match_order']):
+            self.assert_(df['%s_regex'%(m)])
+            re.compile(df['%s_regex'%(m)])
+
+    def test_supy_format(self):
+        df = self.out.format('supy')
+        self.assertEquals('/var/lib/irclogs', df['basepath'])
+        self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['path'])
+        self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
+        self.assert_(df['timestamp_regex'])
+        self.assert_(df['match_order'])
+        for m in re.split('[ |:,]+', df['match_order']):
+            self.assert_(df['%s_regex'%(m)])
+            re.compile(df['%s_regex'%(m)])
+
+    def test_nonexistant_format(self):
+        df = self.out.format('sdflkjlskjf')
+        self.assertEquals('/var/lib/irclogs', df['basepath'])
+        self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['path'])
+        self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
+        self.assert_(df['timestamp_regex'])
+        self.assert_(df['match_order'])
+        for m in re.split('[ |:,]+', df['match_order']):
+            self.assert_(df['%s_regex'%(m)])
+            re.compile(df['%s_regex'%(m)])
+
+    def test_gozer_format(self):
+        df = self.out.format('gozer')
+        self.assertEquals('/home/gozerbot/.gozerbot/', df['basepath'])
+        self.assertEquals('logs/trac/%(channel)s.%Y%m%d.log', df['path'])
+        self.assertEquals('%Y%m%d %H%M%S', df['timestamp_format'])
+        self.assert_(df['timestamp_regex'])
+        self.assert_(df['match_order'])
+        for m in re.split('[ |:,]+', df['match_order']):
+            self.assert_(df['%s_regex'%(m)])
+            re.compile(df['%s_regex'%(m)])
 
 def suite():
     suite = unittest.TestSuite()
