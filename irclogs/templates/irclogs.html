@@ -68,12 +68,16 @@
         <py:otherwise> 
           <h2>${month_name} ${day}, ${year}</h2>
           <div id="irclog-controls">
-            <input type="checkbox" id="showactions" py:if="not missing" style="display: none;"></input>
-            <div id="jscal" style="display: none;">
+            <input type="checkbox" id="showactions"></input> <!--py:if="not missing" style="display: none;"></input>-->
+            <div id="jscal"> <!-- style="display: none;"-->
               <div class="navcal">
-                <a href="#" class="previous">&lt;&lt;</a> 
-                <a class="link-datepicker" href="#">Select Date</a><input class="date-pick" value="${current_date}"/>
-                <a href="#" class="next">&gt;&gt;</a>
+                <a id="date-pick-trigger" href="#">
+                  <img src="${calendar}"/>
+                  Select Date
+                </a>
+                <div class="cal-wrap" style="display: none;">
+                  <div id="date-pick"></div>
+                </div>
               </div>
             </div>
           <br style="clear:both"/>
@@ -85,11 +89,36 @@
         </py:otherwise>
       </py:choose>
       <script type="text/javascript">
+        date = new Date();
+        <py:if test="year and month and day">
+          date.setFullYear(${year}, ${month}-1, ${day});
+        </py:if>
+        jQuery(function($) {
+          jQuery('#date-pick').datepicker({
+            dateFormat: 'yy/mm/dd/',
+            onSelect: function(dateTxt, inst) {
+              window.location.href = '${req.base_path}/irclogs/'+dateTxt;
+              $('.cal-wrap').toggle('blind');
+            },
+            defaultDate: date,
+            showButtonPanel: true,
+            closeText: 'Done',
+            changeMonth: true,
+            changeYear: true,
+            maxDate: new Date()
+            <py:if test="firstYear and firstMonth and firstDay">
+              , minDate: new Date().setFullYear(${firstYear}, ${firstMonth}-1, ${firstDay}) 
+            </py:if>
+          });
+          $('#date-pick-trigger').bind('click', function() {
+            $('.cal-wrap').toggle('blind');
+          });
+        });
         jQuery(document).ready(function($) {
-            irclogs_setup('${current_date}','${start_date}','${int_month}','${req.base_path}');
-            $('#jscal')[0].style.display = 'block';
-            $('#nojscal')[0].style.display = 'none';
-            $('#showactions')[0].style.display = 'block';
+            //irclogs_setup('${current_date}','${start_date}','${int_month}','${req.base_path}');
+            $('#jscal').show();
+            $('#nojscal').hide();
+            $('#showactions').show();
         });
       </script>        
       <br style="clear:both" />

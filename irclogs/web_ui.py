@@ -249,16 +249,22 @@ class IrcLogsView(Component):
 
     def process_request(self, req):
         req.perm.assert_permission('IRCLOGS_VIEW')
-        add_stylesheet(req, 'irclogs/css/style.css')
-        add_stylesheet(req, 'irclogs/css/datePicker.css')
-        add_script(req, 'irclogs/js/date.js')
-        add_script(req, 'irclogs/js/jquery.datePicker.js')
-        add_script(req, 'irclogs/js/irclogs.js')
+        add_stylesheet(req, 'irclogs/css/jquery-ui.css')
+        add_stylesheet(req, 'irclogs/css/ui.datepicker.css')
+        add_stylesheet(req, 'irclogs/css/irclogs.css')
+        add_script(req, 'irclogs/js/jquery-ui.js')
         file_re = self._get_file_re()
 
         context = {}
         entries = {}
         context['cal'] = self._generate_calendar(req, entries)
+        context['calendar'] = req.href.chrome('common', 'ics.png')
+        context['year'] = req.args['year']
+        context['day'] = req.args['day']
+        context['month'] = req.args['month']
+        context['firstDay'] = 1
+        context['firstMonth'] = 1
+        context['firstYear'] = 1977
 
         # list all log files to know what dates are available
 
