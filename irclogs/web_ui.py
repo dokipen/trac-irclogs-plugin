@@ -257,12 +257,13 @@ class IrcLogsView(Component):
 
         context = {}
         entries = {}
+        today = datetime.now()
         context['cal'] = self._generate_calendar(req, entries)
         context['calendar'] = req.href.chrome('common', 'ics.png')
-        context['year'] = req.args['year']
-        context['day'] = req.args['day']
-        context['month'] = req.args['month']
-        context['month_name'] = month_name[int(req.args['month'])]
+        context['year'] = req.args['year'] or today.year
+        context['day'] = req.args['day'] or today.day
+        context['month'] = req.args['month'] or today.month
+        context['month_name'] = month_name[int(context['month'])]
         context['firstDay'] = 3
         context['firstMonth'] = 8
         context['firstYear'] = 1977
@@ -314,7 +315,6 @@ class IrcLogsView(Component):
                 'href':         req.href('irclogs', req.args['year'],
                                          '%02d' % m)
             } for m in months]
-            context['year'] = req.args['year']
             context['viewmode'] = 'months'
         elif req.args['day'] is None:
             year = entries.get(int(req.args['year']), {})
@@ -325,8 +325,6 @@ class IrcLogsView(Component):
                 'href':         req.href('irclogs', req.args['year'],
                                          req.args['month'], '%02d' % d)
             } for d in days]
-            context['year'] = req.args['year']
-            context['month'] = month_name[int(req.args['month'])]
             context['viewmode'] = 'days'
 
         # generate calendar according to log files found
@@ -337,10 +335,6 @@ class IrcLogsView(Component):
         if req.args['day'] is not None:
             logfile = self._get_filename(req.args['year'], req.args['month'],
                                          req.args['day'])
-            context['day'] = req.args['day']
-            context['month'] = req.args['month']
-            context['month_name'] = month_name[int(req.args['month'])]
-            context['year'] = req.args['year']
             context['viewmode'] = 'day'
             context['current_date'] = '%s/%s/%s' % (req.args['month'], 
                                                     req.args['day'], 
