@@ -85,7 +85,7 @@ class FileIRCLogProvider(Component):
 
     join_regex = Option('irclogs', 'join_regex',
         '^%(timestamp_regex)s[ |:]*'\
-        '(?P<message>\*{0,3}\s(?P<nick>[^ ]+)\shas\sjoined.*)$',
+        '(?P<message>\*{0,3}\s?(?P<nick>[^ ]+).*\shas\sjoined.*)$',
         doc="""Default match on JOIN lines.
 
         ex. 2009-05-20T10:10:10  *** nick has joined #channel
@@ -95,7 +95,7 @@ class FileIRCLogProvider(Component):
 
     part_regex = Option('irclogs', 'part_regex',
         '^%(timestamp_regex)s[ |:]*'\
-        '(?P<message>\*{0,3}\s(?P<nick>[^ ]+).*\shas\sleft.*)$',
+        '(?P<message>\*{0,3}\s?(?P<nick>[^ ]+).*\shas\sleft.*)$',
         doc="""Default match on PART lines.
 
         ex. 2009-05-20T10:10:10  *** nick has left #channel
@@ -105,7 +105,7 @@ class FileIRCLogProvider(Component):
 
     quit_regex = Option('irclogs', 'quit_regex',
         '^%(timestamp_regex)s[ |:]*'\
-        '(?P<message>\*{0,3}\s(?P<nick>[^ ]+).*\shas\squit.*)$',
+        '(?P<message>\*{0,3}\s?(?P<nick>[^ ]+).*\shas\squit.*)$',
         doc="""Default match QUIT lines.
 
         ex. 2009-05-20T10:10:10  *** nick has quit IRC
@@ -115,7 +115,7 @@ class FileIRCLogProvider(Component):
 
     kick_regex = Option('irclogs', 'kick_regex',
         '^%(timestamp_regex)s[ |:]*'\
-        '(?P<message>\*{0,3}\s(?P<kicked>[^ ]+)\swas\skicked\sby\s(?P<nick>[^ ]+).*)$',
+        '(?P<message>\*{0,3}\s?(?P<kicked>[^ ]+)\swas\skicked\sby\s(?P<nick>[^ ]+).*)$',
         doc="""Default match KICK lines.
 
         ex. 2009-05-20T10:10:10  *** kickedguy was kicked by nick
@@ -125,7 +125,7 @@ class FileIRCLogProvider(Component):
 
     mode_regex = Option('irclogs', 'mode_regex',
         '^%(timestamp_regex)s[ |:]*'\
-        '(?P<message>\*{0,3}\s(?P<nick>[^ ]+)\ssets\smode:\s(?P<mode>.+))$',
+        '(?P<message>\*{0,3}\s?(?P<nick>[^ ]+)\ssets\smode:\s(?P<mode>.+))$',
         doc="""Default match on MODE lines.
 
         ex. 2009-05-20T10:10:10  *** nick sets mode: +v guy
@@ -135,7 +135,7 @@ class FileIRCLogProvider(Component):
 
     topic_regex = Option('irclogs', 'topic_regex',
         '^%(timestamp_regex)s[ |:]*'\
-        '(?P<message>\*{0,3}\s(?P<nick>[^ ]+)\schanges\stopic\sto\s"(?P<topic>.+)")$',
+        '(?P<message>\*{0,3}\s?(?P<nick>[^ ]+)\schanges\stopic\sto\s"(?P<topic>.+)")$',
         doc="""Default match on TOPIC lines.
 
         ex. 2009-05-20T10:10:10  *** nick changes topic to "new topic"
@@ -145,7 +145,7 @@ class FileIRCLogProvider(Component):
 
     nick_regex = Option('irclogs', 'nick_regex',
         '^%(timestamp_regex)s[ |:]*'\
-                '(?P<message>\*{0,3}\s(?P<nick>[^ ]+)(?:\sis)\s.*now\sknown\sas\s(?P<newnick>.*))$',
+        '(?P<message>\*{0,3}\s?(?P<nick>[^ ]+).*\sis\snow\sknown\sas\s(?P<newnick>.*))$',
         doc="""Default match on NICK lines.
 
         ex. 2009-05-20T10:10:10  *** nick is now known as nick2
@@ -171,7 +171,7 @@ class FileIRCLogProvider(Component):
 
     Option('irclogs', 'format.gozer.basepath', '/home/gozerbot/.gozerbot/')
     Option('irclogs', 'format.gozer.path', 'logs/trac/%(channel)s.%Y%m%d.log')
-    Option('irclogs', 'format.gozer.timestamp_format', '%Y%m%d %H%M%S')
+    Option('irclogs', 'format.gozer.timestamp_format', '%Y-%m-%d %H:%M:%S')
 
     def default_format(self):
         """All default format options.  A potential bug is if the default
