@@ -1,17 +1,32 @@
 """
 Parse logs from files into structured data.  inspired by Marius Gedminas'
 port of Jeff Waugh perl script.
+
+TODO: something about defining formats and channels.
+
+One of the challenges of implementing this class is timezones.  Displaying
+logs for a certain day, midnight to midnight, is different for users depending
+on their timezone.   We must translate the requested timezone to the timezone
+of the log files, find a date range of files to read, and filter out and lines
+that don't fall in the range.
+
+Another challenge is that some systems make multiple, parrellel log files.  
+Gozerbot simple logging creates one log file for messages and another for
+other events.  We must merge these files into a common set of lines before 
+yielding them back to the caller.  The caller should get all lines in order.
+To make matters worse, some lines don't have timestamps.  We must assign
+these lines a best guess timestamp equal to the previously logged line.
 """
 
 # Copyright (c) 2009, Robert Corsaro
 
 import re
 from time import strptime
-from datetime import datetime
+from datetime import datetime, timedelta
 from pytz import timezone
 
 from trac.core import *
-from trac.config import Option
+from trac.config import Option, ListOption
 
 from irclogs.api import IIRCLogsProvider
 
@@ -24,7 +39,13 @@ class FileIRCLogProvider(Component):
 
     # not to be confused with default_format(), which doesn't consider
     # a named format.
-    format = Option('irclogs', 'format', 'supy', doc="Default format")
+    format = Option('irclogs', 'format', 'supy', 
+            doc="The name of the default format to use.")
+
+    network = Option('irclogs', 'network', 
+            doc="""Default network.
+            This is only used as a replacement var in the path option.
+            """)
 
     timezone = Option('irclogs', 'timezone', 'utc',
         doc="""Default timezone that the files are logged in.  This is needed
@@ -36,7 +57,7 @@ class FileIRCLogProvider(Component):
     basepath = Option('irclogs', 'basepath', '/var/lib/irclogs',
         doc="""Default basepath for logs.  Can be overridden by format.""")
 
-    path = Option('irclogs', 'path', '%(channel)s/%(channel)s.%Y-%m-%d.log',
+    paths = ListOption('irclogs', 'paths', '%(channel)s/%(channel)s.%Y-%m-%d.log',
         doc="""
        Default format for complete path to log files.  Include parameters:
           %Y, %m, %d, etc. : all strftime formatting supported
@@ -170,8 +191,61 @@ class FileIRCLogProvider(Component):
             format.""")
 
     Option('irclogs', 'format.gozer.basepath', '/home/gozerbot/.gozerbot/')
-    Option('irclogs', 'format.gozer.path', 'logs/trac/%(channel)s.%Y%m%d.log')
+    ListOption('irclogs', 'format.gozer.paths', 
+            ['logs/simple/%(channel)s.%Y%m%d.log', 
+                'logs/simple/%(channel_name)s.%Y%m%d.log'])
     Option('irclogs', 'format.gozer.timestamp_format', '%Y-%m-%d %H:%M:%S')
+
+    def _get_prefix_options(self, prefix):
+        if not prefix.endswith('.'):
+            prefix = "%s."%(prefix)
+        options = self.config.options('irclogs')
+
+        # pair[0] is the  name and pair[1] is the value
+        _filter = lambda pair: pair[0].startswith(prefix)
+        _map = lambda pair: (re.sub('^%s'%(prefix), '', pair[0]), pair[1])
+        return dict(map(_map, filter(_filter, options)))
+
+    def _get_file_dates(self, start, end, file_tz='utc'):
+        # convert tz
+        file_tz = timezone(file_tz)
+        normal_start = start.astimezone(file_tz)
+        file_tz.normalize(normal_start)
+        normal_end = end.astimezone(file_tz)
+        file_tz.normalize(normal_end)
+
+        # get dates for files
+        days = [normal_start.date()]
+        d = normal_start
+        oneday = timedelta(days=1)
+        while d < normal_end:
+            d = d + oneday
+            days.append(d.date())
+        if d.day != normal_end.day:
+            days.append(normal_end.date())
+
+        return days
+
+    def get_events_in_range(self, channel, start, end):
+        """Channel is the config channel name.  start and end are datetimes
+        in the users tz."""
+        days = self._get_file_dates
+
+        # get files for date range 
+        # read files, filtering events not in range.
+        # merge lines if multi-files in same day
+        #   if line doesn't have timestamp, give it the same timestamp 
+        #   as line above
+        # 
+
+    def channel(self, name):
+        default = {'format': self.format, 'network': self.network}
+
+        # we only want options for this channel
+        options = self._get_prefix_options('channel.%s'%(name))
+        default.update(options)
+        default['format'] = self.format(default['format'])
+        return default
 
     def default_format(self):
         """All default format options.  A potential bug is if the default
@@ -180,10 +254,11 @@ class FileIRCLogProvider(Component):
         this case it would never be read."""
         format = {
                 'basepath': self.basepath,
-                'path': self.path,
+                'paths': self.paths,
                 'match_order': self.match_order,
                 'timestamp_format': self.timestamp_format,
                 'timestamp_regex': self.timestamp_regex,
+                'timezone': self.timezone,
         }
         # grab the match order, and then all the assoc. regexs
         match_order = re.split('[,|: ]+', format['match_order'])
@@ -207,13 +282,7 @@ class FileIRCLogProvider(Component):
         format.gozer.timestamp_regex = 'otherblah'
 
         This method will return all options for a named format."""
-        options = self.config.options('irclogs')
-
-        # we only want options for this format
-        _filter = lambda pair: pair[0].startswith('format.%s.'%(name))
-        _map = lambda pair: (re.sub('^format.%s.'%(name), '', pair[0]), pair[1])
-                
-        format_options = dict(map(_map, filter(_filter, options)))
+        format_options = self._get_prefix_options('format.%s'%(name))
         ret_format = self.default_format()
         ret_format.update(format_options)
         return ret_format

@@ -27,11 +27,6 @@ class IrcLogsView(Component):
                IPermissionRequestor)
     _url_re = re.compile(r'^/irclogs(/(?P<year>\d{4})(/(?P<month>\d{2})'
                          r'(/(?P<day>\d{2}))?)?)?(/(?P<feed>feed)(/(?P<feed_count>\d+?))?)?/?$')
-# TODO: make the line format somewhat configurable
-# Uncomment the following line if using a pipe as a divider and a space
-# between the date adn time.  Make sure to comment out the existing
-# _line_re.
-#    _line_re = re.compile('%s %s \|  (%s)$' % (
     _line_re = re.compile('%sT%s  (%s)$' % (
         r'(?P<date>\d{4}-\d{2}-\d{2})',
         r'(?P<time>\d{2}:\d{2}:\d{2})',
