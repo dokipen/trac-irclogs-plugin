@@ -4,7 +4,7 @@ class IIRCLogsProvider(Interface):
     """An interface for different sources of irc logs.  DB and file 
     implementations are provided."""
 
-    def get_events_in_range(self, channel, start, end):
+    def get_events_in_range(self, channel_name, start, end):
         """Yeilds events, in order, within the range, enclusive.  Channel is 
         the channel name in config, and not the actual channel name.
 

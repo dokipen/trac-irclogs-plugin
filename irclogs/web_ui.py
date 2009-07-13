@@ -21,8 +21,11 @@ from trac.util.text import to_unicode
 from trac.util.datefmt import utc
 
 from genshi.builder import tag
+from irclogs.api import *
 
 class IrcLogsView(Component):
+    providers = ExtensionPoint(IIRCLogsProvider)
+
     implements(INavigationContributor, ITemplateProvider, IRequestHandler, \
                IPermissionRequestor)
     _url_re = re.compile(r'^/irclogs(/(?P<year>\d{4})(/(?P<month>\d{2})'
@@ -90,67 +93,16 @@ class IrcLogsView(Component):
         req.args.update(m.groupdict())
         return True
 
-    def _to_unicode(self, iterable):
-        for line in iterable:
-            yield to_unicode(line, self.charset)
-
-    def _get_file_re(self):
-        return re.compile(r'^%s$' % re.escape(self.file_format)
-              .replace('\\%Y', '(?P<year>\d{4})')
-              .replace('\\%m', '(?P<month>\d{2})')
-              .replace('\\%d', '(?P<day>\d{2})')
-        )
-
-    def _get_filename(self, year, month, day):
-        return os.path.join(self.path, self.file_format
-                .replace('%Y', str(year))
-                .replace('%m', str(month))
-                .replace('%d', str(day))
-        )
-
-    def _render_lines(self, iterable, tz=None):
+    def _render_lines(self, iterable):
         dummy = lambda: {}
         result = []
-        for line in iterable:
-            d = getattr(self._line_re.search(line), 'groupdict', dummy)()
-            for mode in ('channel', 'action', 'server'):
-                prefix = mode[0]
-                text = d.get('%s_text' % prefix)
-                if not text is None:
-                    nick = d['%s_nickname' % prefix]
-                    break
-            else:
-                continue
-            
-            if nick in self.hidden_users:
-                hidden = "hidden_user"
-            else:
-                hidden = ""
-
-            if not tz is None:
-                utc = pytz.utc
-                server_dt = self._get_tz_datetime(d['date'], d['time'])
-                local_dt = tz.normalize(server_dt.astimezone(tz))
-                local_time = local_dt.strftime("%H:%M:%S")
-                local_date = local_dt.strftime("%Y-%m-%d")
-                utc_dt = utc.normalize(server_dt.astimezone(utc)). \
-                    strftime("UTC%Y-%m-%dT%H:%M:%S")
-            else:
-                local_date = d['date']
-                local_time = d['time']
-                utc_dt = d['time']
-
-            result.append({
-                'date':         local_date,
-                'hidden_user':  hidden,
-                'time':         local_time,
-                'utc_dt':       utc_dt,
-                'mode':         mode,
-                'text':         text,
-                'nickname':     nick,
-                'nickcls':      'nick-%d' % (sum(ord(c) for c in nick) % 8),
-            })
-        return result
+        def _map(line):
+            if line['nick'] in self.hidden_users:
+                line.update({'hidden': 'hidden_user'})
+            if line['message']:
+                line['message'] = to_unicode(line['message'], self.charset)
+            return line
+        return map(_map, iterable)
 
     def _generate_calendar(self, req, entries):
         if not req.args['year'] is None:
@@ -237,115 +189,41 @@ class IrcLogsView(Component):
             },
         }
 
-    def _get_tz_datetime(self, date, time):
-        return datetime(*strptime(date + "T" +  time, 
-                                  "%Y-%m-%dT%H:%M:%S")[0:6]). \
-                                  replace(tzinfo=localtz)
-
+    def get_provider(self, name):
+        # TODO: generalize
+        for p in self.providers:
+            return p
+            
     def process_request(self, req):
         req.perm.assert_permission('IRCLOGS_VIEW')
         add_stylesheet(req, 'irclogs/css/jquery-ui.css')
         add_stylesheet(req, 'irclogs/css/ui.datepicker.css')
         add_stylesheet(req, 'irclogs/css/irclogs.css')
         add_script(req, 'irclogs/js/jquery-ui.js')
-        file_re = self._get_file_re()
 
         context = {}
         entries = {}
         today = datetime.now()
         context['cal'] = self._generate_calendar(req, entries)
         context['calendar'] = req.href.chrome('common', 'ics.png')
-        context['year'] = req.args['year'] or today.year
-        context['day'] = req.args['day'] or today.day
-        context['month'] = req.args['month'] or today.month
-        context['month_name'] = month_name[int(context['month'])]
+        context['year'] = int(req.args.get('year', today.year))
+        context['day'] = int(req.args.get('day', today.day))
+        context['month'] = int(req.args.get('month', today.month))
+        context['month_name'] = month_name[context['month']]
         context['firstDay'] = 3
         context['firstMonth'] = 8
         context['firstYear'] = 1977
 
-        # list all log files to know what dates are available
+        # TODO: do this for each channel, instead of hardcode
+        channel = 'test2'
+        provider = self.get_provider('file')
+        lines = provider.get_events_in_range(channel, datetime(context['year'], context['month'], context['day'], 0, 0, 0, tzinfo=req.tz), datetime(context['year'], context['month'], context['day']+1, 0, 0, 0, tzinfo=req.tz))
 
-        try:
-            files = os.listdir(self.path)
-        except OSError, e:
-            code, message = e
-            context['error'] = True
-            context['message'] = '%s: %s' % (message, e.filename)
-            return 'irclogs.html', context, None
-        
-        if len(files) == 0:
-           context['error'] = True
-           context['message'] = 'No logs exist yet. ' \
-                                'Contact your system administrator.'
-           return 'irclogs.html', context, None
-        
-        files.sort()
-        first_found = True
-        for fn in files:
-            m = file_re.search(fn)
-            if m is None:
-                continue 
-            d = m.groupdict()
-            y = entries.setdefault(int(d['year']), {})
-            m = y.setdefault(int(d['month']), {})
-            m[int(d['day'])] = True
-            if first_found is True:
-                context['start_date'] = '%s/%s/%s' % (d['month'], 
-                                                      d['day'],
-                                                      d['year'])
-                first_found = False
+        context['viewmode'] = 'day'
+        context['current_date'] = '%02d/%02d/%04d'%(context['month'], context['day'], context['year'])
+        context['int_month'] = context['month']-1
 
-        # default to today if no date is selected
-        # or build lists of available dates if no date is given
-        if req.args['year'] is None:
-            today = datetime.now()
-            req.args['year'] = today.year
-            req.args['month'] = '%02d' % today.month
-            req.args['day'] = '%02d' % today.day
-        elif req.args['month'] is None:
-            months = entries.get(int(req.args['year']), {}).keys()
-            months.sort()
-            context['months'] = [{
-                'caption':      month_name[m],
-                'href':         req.href('irclogs', req.args['year'],
-                                         '%02d' % m)
-            } for m in months]
-            context['viewmode'] = 'months'
-        elif req.args['day'] is None:
-            year = entries.get(int(req.args['year']), {})
-            days = year.get(int(req.args['month']), {}).keys()
-            days.sort()
-            context['days'] = [{
-                'caption':      d,
-                'href':         req.href('irclogs', req.args['year'],
-                                         req.args['month'], '%02d' % d)
-            } for d in days]
-            context['viewmode'] = 'days'
-
-        # generate calendar according to log files found
-
-
-        # if day is given, read logfile and build irc log for display
-
-        if req.args['day'] is not None:
-            logfile = self._get_filename(req.args['year'], req.args['month'],
-                                         req.args['day'])
-            context['viewmode'] = 'day'
-            context['current_date'] = '%s/%s/%s' % (req.args['month'], 
-                                                    req.args['day'], 
-                                                    req.args['year'])
-            context['int_month'] = int(req.args['month'])-1
-
-            if not os.path.exists(logfile):
-                context['missing'] = True
-            else:
-                context['missing'] = False
-                f = file(logfile)
-                try:
-                    context['lines'] = self._render_lines(self._to_unicode(f),
-                                                          req.tz)
-                finally:
-                    f.close()
+        context['lines'] = self._render_lines(lines)
 
         # handle if display type is html or an external feed
         if req.args['feed'] is not None:

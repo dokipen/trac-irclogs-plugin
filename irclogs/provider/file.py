@@ -1,5 +1,5 @@
 """
-Parse logs from files into structured data.  inspired by Marius Gedminas'
+Parse logs from files into structured data.  Inspired by Marius Gedminas'
 port of Jeff Waugh perl script.
 
 TODO: something about defining formats and channels.
@@ -24,6 +24,7 @@ import re
 from time import strptime, strftime
 from datetime import datetime, timedelta
 from pytz import timezone
+import os.path
 import itertools
 import operator
 import heapq
@@ -32,6 +33,10 @@ from trac.core import *
 from trac.config import Option, ListOption
 
 from irclogs.api import IIRCLogsProvider
+
+# this is used for comparison only, and never included in yielded
+# values
+OLDDATE = datetime(1977,8,3,0,0,0,tzinfo=timezone('utc'))
 
 def merge_iseq(iterables, key=operator.lt):
     """Thanks kniht!  Wrapper for heapq.merge that allows specifying a key.
@@ -205,11 +210,13 @@ class FileIRCLogProvider(Component):
 
     Option('irclogs', 'format.gozer.basepath', '/home/gozerbot/.gozerbot/')
     ListOption('irclogs', 'format.gozer.paths', 
-            ['logs/simple/%(channel)s.%Y%m%d.log', 
-                'logs/simple/%(channel_name)s.%Y%m%d.log'])
+            ['logs/simple/%(channel)s.%Y%m%d.slog', 
+                'logs/simple/%(channel_name)s.%Y%m%d.slog'])
     Option('irclogs', 'format.gozer.timestamp_format', '%Y-%m-%d %H:%M:%S')
 
     def _get_prefix_options(self, prefix):
+        """Helper method to get options out of the config object.  Gets all
+        options that start with prefix, and also removes prefix portion."""
         if not prefix.endswith('.'):
             prefix = "%s."%(prefix)
         options = self.config.options('irclogs')
@@ -223,8 +230,8 @@ class FileIRCLogProvider(Component):
         """Get files that are within the start-end range, taking into
         account that the file timezone can be different from the start-end
         timezones."""
-        # convert tz
-        file_tz = timezone(file_tz)
+        if type(file_tz) == str:
+            file_tz = timezone(file_tz)
         normal_start = start.astimezone(file_tz)
         file_tz.normalize(normal_start)
         normal_end = end.astimezone(file_tz)
@@ -240,7 +247,7 @@ class FileIRCLogProvider(Component):
         if d.day != normal_end.day:
             yield normal_end.date()
 
-    def _get_files(self, dates):
+    def _get_files(self, channel, dates):
         """Assumes dates are already normalized for the file formats
         timezone. Generator returns a list of files for each date.
 
@@ -253,39 +260,49 @@ class FileIRCLogProvider(Component):
         > [file-1.3-a.log, file-1.3-b.log]
         > [file-1.4-a.log, file-1.4-b.log]
         """
+        basepath = channel['format']['basepath']
         for date in dates:
             filepaths = []
-            for path in channel['paths']:
-                fileformat = path.join(channel['basepath'], path%({
+            for path in channel['format']['paths']:
+                fileformat = os.path.join(basepath, path)
+                fileformat = date.strftime(fileformat)
+                fileformat = fileformat%({
                     'channel': channel['channel'],
                     'network': channel.get('network'),
-                }))
-                filepaths.append(strftime(fileformat, date))
+                    'channel_name': channel['channel'][1:],
+                })
+                self.log.error(fileformat)
+                filepaths.append(fileformat)
             yield filepaths
 
-    def get_events_in_range(self, channel, start, end):
+    def get_events_in_range(self, channel_name, start, end):
         """Channel is the config channel name.  start and end are datetimes
         in the users tz.  If the start and end times have different timezones,
         you're fucked."""
-        tz = channel['format'].get('timezone', 'utc') 
+        self.log.error(channel_name)
+        channel = self.channel(channel_name)
+        self.log.error(channel)
+        tz = timezone(channel['format'].get('timezone', 'utc'))
         dates = self._get_file_dates(start, end, tz)
-        filesets = self._get_files(dates)
+        filesets = self._get_files(channel, dates)
         # target tz
-        ttz = start.tzinfo
-        # this is used for comparison only, and never included in yielded
-        # values
-        default_date = datetime(1977,8,3,0,0,0,tzinfo=timezone('utc'))
+        # convert to pytz timezone
+        ttz = timezone(start.tzname())
 
         def _get_lines():
             for fileset in filesets:
-                files = [file(f) for f in fileset]
-                parsers = list(
-                        [parse_lines(f, tz=tz, target_tz=ttz) for f in files])
-                def _key(x):
-                    print x
-                    return x.get('timestamp', default_date)
-                for l in merge_iseq(parsers, key=_key): #(lambda x: x['timestamp'])):
-                    yield l
+                # only existing files
+                files = filter(lambda x: os.path.exists(x), fileset)
+                if len(files) > 0:
+                    files = [file(f) for f in files]
+                    parsers = list(
+                            [self.parse_lines(f, format=channel['format'], tz=tz, target_tz=ttz) for f in files])
+                    def _key(x):
+                        print x
+                        return x.get('timestamp', OLDDATE)
+                    for l in merge_iseq(parsers, key=_key): #(lambda x: x['timestamp'])):
+                        yield l
+                    [f.close() for f in files]
 
         for line in _get_lines():
             if line['timestamp']:
@@ -293,6 +310,27 @@ class FileIRCLogProvider(Component):
                     yield line
                 
     def channel(self, name):
+        """Get channel data by name.
+        
+        ex.
+        {
+          'channel': '#mychannel',
+          'format': {
+            'basepath': '/var/logs/irclogs',
+            'paths': ['%(network)s/%(channel)s-%Y%m%d.log', '%(network)s/%(channel)s-%Y%m%d.slog'],
+            'match_order': ('message', 'action', 'topic'),
+            'timestamp_regex': '^(?P<timestamp>blahblah)',
+            'message_regex': '^%(timestamp_regex) (?P<message>blahblah)$',
+            'action_regex': '^%(timestamp_regex) * (?P<message>blahblah)',
+            etc...
+          },
+          'network': 'Freenode'
+        }
+
+        Network is usually none, but could be used with an irclogger that logs
+        on to multi-networks.  It is only used as a positional parameter in 
+        format.paths.
+        """
         default = {'format': self.format, 'network': self.network}
 
         # we only want options for this channel
