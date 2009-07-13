@@ -21,14 +21,27 @@ these lines a best guess timestamp equal to the previously logged line.
 # Copyright (c) 2009, Robert Corsaro
 
 import re
-from time import strptime
+from time import strptime, strftime
 from datetime import datetime, timedelta
 from pytz import timezone
+import itertools
+import operator
+import heapq
 
 from trac.core import *
 from trac.config import Option, ListOption
 
 from irclogs.api import IIRCLogsProvider
+
+def merge_iseq(iterables, key=operator.lt):
+    """Thanks kniht!  Wrapper for heapq.merge that allows specifying a key.
+    http://bitbucket.org/kniht/scraps/src/tip/python/merge_iseq.py
+    """
+    def keyed(v):
+        return key(v), v
+    iterables = map(lambda x: itertools.imap(keyed, x), iterables)
+    for item in heapq.merge(*iterables):
+        yield item[1]
 
 class FileIRCLogProvider(Component):
     """Provide logs from irc log files.  All default regex config parameters
@@ -207,6 +220,9 @@ class FileIRCLogProvider(Component):
         return dict(map(_map, filter(_filter, options)))
 
     def _get_file_dates(self, start, end, file_tz='utc'):
+        """Get files that are within the start-end range, taking into
+        account that the file timezone can be different from the start-end
+        timezones."""
         # convert tz
         file_tz = timezone(file_tz)
         normal_start = start.astimezone(file_tz)
@@ -215,29 +231,67 @@ class FileIRCLogProvider(Component):
         file_tz.normalize(normal_end)
 
         # get dates for files
-        days = [normal_start.date()]
+        yield normal_start.date()
         d = normal_start
         oneday = timedelta(days=1)
         while d < normal_end:
             d = d + oneday
-            days.append(d.date())
+            yield d.date()
         if d.day != normal_end.day:
-            days.append(normal_end.date())
+            yield normal_end.date()
 
-        return days
+    def _get_files(self, dates):
+        """Assumes dates are already normalized for the file formats
+        timezone. Generator returns a list of files for each date.
+
+        psuedo example:
+        
+        for fileset in _get_files([1/2, 1/3, 1/4]):
+            print "> %s"%(str(fileset))
+
+        > [file-1.2-a.log, file-1.2-b.log]
+        > [file-1.3-a.log, file-1.3-b.log]
+        > [file-1.4-a.log, file-1.4-b.log]
+        """
+        for date in dates:
+            filepaths = []
+            for path in channel['paths']:
+                fileformat = path.join(channel['basepath'], path%({
+                    'channel': channel['channel'],
+                    'network': channel.get('network'),
+                }))
+                filepaths.append(strftime(fileformat, date))
+            yield filepaths
 
     def get_events_in_range(self, channel, start, end):
         """Channel is the config channel name.  start and end are datetimes
-        in the users tz."""
-        days = self._get_file_dates
+        in the users tz.  If the start and end times have different timezones,
+        you're fucked."""
+        tz = channel['format'].get('timezone', 'utc') 
+        dates = self._get_file_dates(start, end, tz)
+        filesets = self._get_files(dates)
+        # target tz
+        ttz = start.tzinfo
+        # this is used for comparison only, and never included in yielded
+        # values
+        default_date = datetime(1977,8,3,0,0,0,tzinfo=timezone('utc'))
 
-        # get files for date range 
-        # read files, filtering events not in range.
-        # merge lines if multi-files in same day
-        #   if line doesn't have timestamp, give it the same timestamp 
-        #   as line above
-        # 
+        def _get_lines():
+            for fileset in filesets:
+                files = [file(f) for f in fileset]
+                parsers = list(
+                        [parse_lines(f, tz=tz, target_tz=ttz) for f in files])
+                def _key(x):
+                    print x
+                    return x.get('timestamp', default_date)
+                for l in merge_iseq(parsers, key=_key): #(lambda x: x['timestamp'])):
+                    yield l
 
+        for line in _get_lines():
+            if line['timestamp']:
+                if line['timestamp'] > start or line['timestamp'] < end:
+                    yield line
+                
     def channel(self, name):
         default = {'format': self.format, 'network': self.network}
 

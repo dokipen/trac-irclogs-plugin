@@ -415,7 +415,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
     def test_get_file_dates(self):
         s = self._date("20090101050500")
         e = self._date("20090104050500")
-        days = self.out._get_file_dates(s,e)
+        days = list(self.out._get_file_dates(s,e))
         self.assertEquals(4, len(days));
         self.assertEquals(s.date(), days[0]);
         self.assertEquals(e.date(), days[3]);
@@ -423,17 +423,29 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
     def test_get_file_dates_tz(self):
         s = self._date("20090102010000", "America/New_York")
         e = self._date("20090104010000", "America/New_York")
-        days = self.out._get_file_dates(s,e)
+        days = list(self.out._get_file_dates(s,e))
         self.assertEquals(3, len(days));
         self.assertEquals(self._date("20090102060000").date(), days[0]);
         self.assertEquals(self._date("20090104060000").date(), days[2]);
 
         s = self._date("20090102010000", "America/New_York")
         e = self._date("20090104200000", "America/New_York")
-        days = self.out._get_file_dates(s,e)
+        days = list(self.out._get_file_dates(s,e))
         self.assertEquals(4, len(days));
         self.assertEquals(self._date("20090102060000").date(), days[0]);
         self.assertEquals(self._date("20090105060000").date(), days[3]);
+
+    def test_merge_iseq(self):
+        parsers = []
+        for f in (
+                (self.supygozerlines, self.out.format('supy')), 
+                (self.simplegozerlines, self.out.format('gozer')), 
+                (self.supylines, self.out.format('supy'))):
+            parsers.append(self.out.parse_lines(f[0], format=f[1]))
+        def _key(x):
+            return x.get('timestamp', datetime(1970,1,1,0,0,0, tzinfo=timezone('utc')))
+        lines = list(merge_iseq(parsers, key=_key))
+        self.assertEquals(39, len(lines))
 
 def suite():
     suite = unittest.TestSuite()
