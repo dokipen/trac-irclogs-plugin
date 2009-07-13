@@ -68,7 +68,7 @@
         <py:otherwise> 
           <h2>${month_name} ${day}, ${year}</h2>
           <div id="irclog-controls">
-            <input type="checkbox" id="showactions">Display crap</input> <!--py:if="not missing" style="display: none;"></input>-->
+            <input type="checkbox" id="showactions">Display Announcements</input>
             <div id="jscal"> <!-- style="display: none;"-->
               <div class="navcal">
                 <a id="date-pick-trigger" href="#">
@@ -120,10 +120,19 @@
           });
         });
         jQuery(document).ready(function($) {
-            //irclogs_setup('${current_date}','${start_date}','${int_month}','${req.base_path}');
             $('#jscal').show();
             $('#nojscal').hide();
             $('#showactions').show();
+            $('#showactions').click(function(e) {
+              if ($('#showactions').checked()) {
+                $$('tr').show();
+              } else {
+                $$('tr').hide();
+                $$('.comment').show();
+              }
+            });
+            $$('tr').hide();
+            $$('.comment').show();
         });
       </script>        
       <br style="clear:both" />

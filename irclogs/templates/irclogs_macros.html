@@ -4,11 +4,17 @@
 
   <py:def function="irclog_table(lines, extra_classes='', page_href='', missing=False)">
       <table class="irclog ${extra_classes}" py:if="not missing">
-        <tr py:for="line in lines" class="${line.mode} ${line.hidden_user}" >
-          <td class="time">[<a href="${page_href}#${line['timestamp']}" title="${line['timestamp']}" id="${line['timestamp']}">${line['timestamp']}</a>]</td>
-          <td class="left" py:if="line['type'] in ('action', 'server')">*</td>
-          <td class="left" py:if="line['type'] == 'comment'">&lt;<span class="${line['nick']}">${line['nick']}</span>&gt;</td>
-          <td class="right">${line['type'] != 'comment' and line['nick'] + ' ' or '' }${line['message']}</td>
+        <tr py:for="line in lines" class="${line['type']} ${line['hidden_user']}" >
+          <td class="time">[<a href="${page_href}#${line['timestamp'].time()}" title="${line['timestamp'].time()}" id="${line['timestamp'].time()}">${line['timestamp'].time()}</a>]</td>
+          <py:choose test="line['type']">
+            <py:when test="'comment'">
+              <td class="left" >&lt;<span class="${line['nick']}">${line['nick']}</span>&gt;</td>
+              <td class="right">${line['type'] != 'comment' and line['nick'] + ' ' or '' }${line['comment']}</td>
+            </py:when>
+            <py:otherwise>
+              <td></td><td><span class="${line['type']}">${line['message']}</span></td>
+            </py:otherwise>
+          </py:choose>
         </tr>
       </table>
   </py:def>

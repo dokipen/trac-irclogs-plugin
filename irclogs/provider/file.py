@@ -271,7 +271,6 @@ class FileIRCLogProvider(Component):
                     'network': channel.get('network'),
                     'channel_name': channel['channel'][1:],
                 })
-                self.log.error(fileformat)
                 filepaths.append(fileformat)
             yield filepaths
 
@@ -279,9 +278,7 @@ class FileIRCLogProvider(Component):
         """Channel is the config channel name.  start and end are datetimes
         in the users tz.  If the start and end times have different timezones,
         you're fucked."""
-        self.log.error(channel_name)
         channel = self.channel(channel_name)
-        self.log.error(channel)
         tz = timezone(channel['format'].get('timezone', 'utc'))
         dates = self._get_file_dates(start, end, tz)
         filesets = self._get_files(channel, dates)
