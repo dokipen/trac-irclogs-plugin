@@ -30,15 +30,6 @@ class IrcLogsView(Component):
                IPermissionRequestor)
     _url_re = re.compile(r'^/irclogs(/(?P<year>\d{4})(/(?P<month>\d{2})'
                          r'(/(?P<day>\d{2}))?)?)?(/(?P<feed>feed)(/(?P<feed_count>\d+?))?)?/?$')
-    _line_re = re.compile('%sT%s  (%s)$' % (
-        r'(?P<date>\d{4}-\d{2}-\d{2})',
-        r'(?P<time>\d{2}:\d{2}:\d{2})',
-        '|'.join([
-            r'(<(?P<c_nickname>.*?)> (?P<c_text>.*?))',
-            r'(\* (?P<a_nickname>.*?) (?P<a_text>.*?))',
-            r'(\*\*\* (?P<s_nickname>.*?) (?P<s_text>.*?))'
-        ]))
-    )
     charset = Option('irclogs', 'charset', 'utf-8',
                      doc='Channel charset')
     file_format = Option('irclogs', 'file_format', '#channel.%Y-%m-%d.log',
@@ -96,7 +87,7 @@ class IrcLogsView(Component):
 
     def _render_lines(self, iterable):
         def _map(line):
-            if line['nick'] in self.hidden_users:
+            if line.get('nick') in self.hidden_users:
                 line.update({'hidden': 'hidden_user'})
             if line['message']:
                 line['message'] = to_unicode(line['message'], self.charset)

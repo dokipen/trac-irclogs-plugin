@@ -272,6 +272,7 @@ class FileIRCLogProvider(Component):
                     'channel_name': channel['channel'][1:],
                 })
                 filepaths.append(fileformat)
+                self.log.debug("parsing %s"%(fileformat))
             yield filepaths
 
     def get_events_in_range(self, channel_name, start, end):
@@ -302,9 +303,11 @@ class FileIRCLogProvider(Component):
                     [f.close() for f in files]
 
         for line in _get_lines():
-            if line['timestamp']:
+            if line.get('timestamp'):
                 if line['timestamp'] > start or line['timestamp'] < end:
                     yield line
+            else:
+                yield line
                 
     def channel(self, name):
         """Get channel data by name.
