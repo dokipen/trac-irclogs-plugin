@@ -47,7 +47,7 @@ class IrcLogsView(Component):
                              '#channel.%Y-%m-%d.log')
     path = Option('irclogs', 'path', '',
                   doc='The path where the irc logfiles are')
-    navbutton = Option('irclogs', 'navigation_button', '',
+    navbutton = Option('irclogs', 'navbutton', 'irc logs',
                      doc="""If not empty an button with this value as caption 
                             is added to the navigation bar, pointing to the 
                             irc plugin""")
@@ -79,7 +79,8 @@ class IrcLogsView(Component):
         if req.perm.has_permission('IRCLOGS_VIEW'):
             title = self.navbutton.strip()
             if title:
-                yield 'mainnav', 'irclogs', html.a(title, href=req.href.irclogs())
+                yield 'mainnav', 'irclogs-test2', html.a(title, href=req.href.irclogs())
+                yield 'mainnav', 'irclogs-test3', html.a(title, href=req.href.irclogs())
 
     # IPermissionHandler methods
     def get_permission_actions(self):
@@ -94,8 +95,6 @@ class IrcLogsView(Component):
         return True
 
     def _render_lines(self, iterable):
-        dummy = lambda: {}
-        result = []
         def _map(line):
             if line['nick'] in self.hidden_users:
                 line.update({'hidden': 'hidden_user'})

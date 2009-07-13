@@ -125,13 +125,13 @@
             $('#showactions').show();
             $('#showactions').click(function(e) {
               if ($('#showactions').checked()) {
-                $$('tr').show();
+                $$('.irclog tr').show();
               } else {
-                $$('tr').hide();
+                $$('.irclog tr').hide();
                 $$('.comment').show();
               }
             });
-            $$('tr').hide();
+            $$('.irclog tr').hide();
             $$('.comment').show();
         });
       </script>        
