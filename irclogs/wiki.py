@@ -10,7 +10,9 @@ class IrcLogWiki(Component):
        including the anchor to the message timestamp"""
     implements(IWikiSyntaxProvider) 
 
-    date_re = re.compile(r'^UTC(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})')
+    date_re = re.compile(
+            r'^(?P<channel>.+)-UTC(?P<year>\d{4})' +
+            r'-(?P<month>\d{2})-(?P<day>\d{2})')
 
     # IWikiSyntaxProvider methods
     def get_wiki_syntax(self):
@@ -23,9 +25,9 @@ class IrcLogWiki(Component):
        m = self.date_re.match(target)
        if not m:
            return system_message('Invalid IRC Log Link: '
-                         'Must be of the format UTCYYYY-MM-DDTHH:MM:SS %s')
-       return html.a(label, title=label, 
-                     href=formatter.href.irclogs(m.group('year'),
-                                                 m.group('month'),
-                                                 m.group('day'),) + 
-                            '#%s' % target)
+                     'Must be of the format channel-UTCYYYY-MM-DDTHH:MM:SS %s')
+       return html.a(label, title=label, href=formatter.href.irclogs(
+                         m.group('channel'),
+                         m.group('year'),
+                         m.group('month'),
+                         m.group('day'),) + '#%s' % target)
