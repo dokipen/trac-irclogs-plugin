@@ -23,7 +23,7 @@ these lines a best guess timestamp equal to the previously logged line.
 import re
 from time import strptime, strftime
 from datetime import datetime, timedelta
-from pytz import timezone
+from pytz import timezone, UnknownTimeZoneError
 import os.path
 import itertools
 import operator
@@ -280,12 +280,25 @@ class FileIRCLogProvider(Component):
         in the users tz.  If the start and end times have different timezones,
         you're fucked."""
         channel = self.channel(channel_name)
-        tz = timezone(channel['format'].get('timezone', 'utc'))
+        tzname = channel['format'].get('timezone', 'utc')
+        try:
+            tz = timezone(tzname)
+        except UnknownTimeZoneError:
+            self.log.warn("input timezone %s not supported, irclogs will be "\
+                    "parsed as UTC")
+            tzname = 'UTC'
+            tz = timezone(tzname)
         dates = self._get_file_dates(start, end, tz)
         filesets = self._get_files(channel, dates)
         # target tz
         # convert to pytz timezone
-        ttz = timezone(start.tzname())
+        try:
+            ttz = timezone(start.tzname())
+        except UnknownTimeZoneError:
+            self.log.warn("timezone %s not supported, irclog output will be "\
+                    "%s"%(start.tzname(), tzname))
+            ttz = tz
+
 
         def _get_lines():
             for fileset in filesets:
@@ -296,7 +309,6 @@ class FileIRCLogProvider(Component):
                     parsers = list(
                             [self.parse_lines(f, format=channel['format'], tz=tz, target_tz=ttz) for f in files])
                     def _key(x):
-                        print x
                         return x.get('timestamp', OLDDATE)
                     for l in merge_iseq(parsers, key=_key): #(lambda x: x['timestamp'])):
                         yield l
@@ -304,7 +316,7 @@ class FileIRCLogProvider(Component):
 
         for line in _get_lines():
             if line.get('timestamp'):
-                if line['timestamp'] > start or line['timestamp'] < end:
+                if line['timestamp'] >= start and line['timestamp'] < end:
                     yield line
             else:
                 yield line

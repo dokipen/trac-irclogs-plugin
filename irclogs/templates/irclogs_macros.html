@@ -4,11 +4,11 @@
 
   <py:def function="irclog_table(lines, extra_classes='', page_href='', missing=False)">
       <table class="irclog ${extra_classes}" py:if="not missing">
-        <tr py:for="line in lines" class="${line['type']} ${line['hidden_user']}" >
+        <tr py:for="line in lines" class="${line['type']} ${line['hidden']}" >
           <py:choose test="line['type']">
             <py:when test="'comment'">
               <td class="time">[<a href="${page_href}#${line['timestamp'].time()}" title="${line['timestamp'].time()}" id="${line['timestamp'].time()}">${line['timestamp'].time()}</a>]</td>
-              <td class="left" >&lt;<span class="${line.get('nick')}">${line.get('nick')}</span>&gt;</td>
+              <td class="left" >&lt;<span class="${line.get('nickcls')}">${line.get('nick')}</span>&gt;</td>
               <td class="right">${line['type'] != 'comment' and line.get('nick') + ' ' or '' }${line['comment']}</td>
             </py:when>
             <py:when test="'other'">

@@ -138,3 +138,7 @@ div#irclog-controls {
     position: absolute;
     right: -10px;
 }
+
+#chat-title {
+    float: left;
+}

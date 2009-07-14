@@ -22,27 +22,17 @@ from trac.util.datefmt import utc
 
 from genshi.builder import tag
 from irclogs.api import *
+from irclogs.nojs import generate_nojs_calendar
 
 class IrcLogsView(Component):
     providers = ExtensionPoint(IIRCLogsProvider)
 
     implements(INavigationContributor, ITemplateProvider, IRequestHandler, \
                IPermissionRequestor)
-    _url_re = re.compile(r'^/irclogs(/(?P<year>\d{4})(/(?P<month>\d{2})'
+    _url_re = re.compile(r'^/irclogs/(?P<channel>\w+)(/(?P<year>\d{4})(/(?P<month>\d{2})'
                          r'(/(?P<day>\d{2}))?)?)?(/(?P<feed>feed)(/(?P<feed_count>\d+?))?)?/?$')
     charset = Option('irclogs', 'charset', 'utf-8',
                      doc='Channel charset')
-    file_format = Option('irclogs', 'file_format', '#channel.%Y-%m-%d.log',
-                     doc='Format of a logfile for a given day. Must '
-                             'include %Y, %m and %d. Example: '
-                             '#channel.%Y-%m-%d.log')
-    path = Option('irclogs', 'path', '',
-                  doc='The path where the irc logfiles are')
-    navbutton = Option('irclogs', 'navbutton', 'irc logs',
-                     doc="""If not empty an button with this value as caption 
-                            is added to the navigation bar, pointing to the 
-                            irc plugin""")
-    prefix = Option('irclogs', 'prefix', '', doc='IRC Channel name')
 
     search_db_path = Option('irclogs', 'search_db_path', 
                             '/tmp/irclogs.idx', 
@@ -63,15 +53,17 @@ class IrcLogsView(Component):
 
     # INavigationContributor methods
     def get_active_navigation_item(self, req):
-        if self.navbutton.strip():
-            return 'irclogs'
+        for ch in self._get_channels():
+            yield 'irclogs-%s'%(ch)
 
     def get_navigation_items(self, req):
         if req.perm.has_permission('IRCLOGS_VIEW'):
-            title = self.navbutton.strip()
-            if title:
-                yield 'mainnav', 'irclogs-test2', html.a(title, href=req.href.irclogs())
-                yield 'mainnav', 'irclogs-test3', html.a(title, href=req.href.irclogs())
+            for ch in self._get_channels():
+                ops = dict(self.config.options('irclogs'))
+                chan = ops['channel.%s.channel'%(ch)]
+                navbutton = ops.get('channel.%s.navbutton'%(ch), chan)
+                l = html.a(navbutton, href=req.href.irclogs(ch))
+                yield 'mainnav', 'irclogs-%s'%(ch), l
 
     # IPermissionHandler methods
     def get_permission_actions(self):
@@ -85,99 +77,17 @@ class IrcLogsView(Component):
         req.args.update(m.groupdict())
         return True
 
-    def _render_lines(self, iterable):
-        def _map(line):
-            if line.get('nick') in self.hidden_users:
-                line.update({'hidden': 'hidden_user'})
-            if line['message']:
-                line['message'] = to_unicode(line['message'], self.charset)
-            return line
-        return map(_map, iterable)
-
-    def _generate_calendar(self, req, entries):
-        if not req.args['year'] is None:
-            year = int(req.args['year'])
-        else:
-            year = datetime.now().year
-        if not req.args['month'] is None:
-            month = int(req.args['month'])
-        else:
-            month = datetime.now().month
-        if not req.args['day'] is None:
-            today = int(req.args['day'])
-        else:
-            today = -1
-        this_month_entries = entries.get(year, {}).get(month, {})
-
-        weeks = []
-        for week in calendar.monthcalendar(year, month):
-            w = []
-            for day in week:
-                if not day:
-                    w.append({
-                        'empty':    True
-                    })
-                else:
-                    w.append({
-                        'caption':  day,
-                        'href':     req.href('irclogs', year,
-                                             '%02d' % month, '%02d' % day),
-                        'today':    day == today,
-                        'has_log':  day in this_month_entries
-                    })
-            weeks.append(w)
-
-        next_month_year = year
-        next_month = int(month) + 1
-        if next_month > 12:
-            next_month_year += 1
-            next_month = 1
-        if today > -1:
-            next_month_href = req.href('irclogs', next_month_year,
-                                       '%02d' % next_month, '%02d' % today)
-        else:
-            next_month_href = req.href('irclogs', next_month_year,
-                                       '%02d' % next_month)
-
-        prev_month_year = year
-        prev_month = int(month) - 1
-        if prev_month < 1:
-            prev_month_year -= 1
-            prev_month = 12
-        if today > -1:
-            prev_month_href = req.href('irclogs', prev_month_year,
-                                       '%02d' % prev_month, '%02d' % today)
-        else:
-            prev_month_href = req.href('irclogs', prev_month_year,
-                                       '%02d' % prev_month)
-
-        return {
-            'weeks':        weeks,
-            'year':         {
-                'caption':      year,
-                'href':         req.href('irclogs', year)
-            },
-            'month':        {
-                'caption':      month_name[month],
-                'href':         req.href('irclogs', year, '%02d' % month)
-            },
-            'next_year':    {
-                'caption':      str(year + 1),
-                'href':         req.href('irclogs', year + 1)
-            },
-            'prev_year':    {
-                'caption':      str(year - 1),
-                'href':         req.href('irclogs', year - 1)
-            },
-            'next_month':   {
-                'caption':      '%02d' % next_month,
-                'href':         next_month_href
-            },
-            'prev_month':   {
-                'caption':      '%02d' % prev_month,
-                'href':         prev_month_href
-            },
-        }
+    def _get_channels(self):
+        CHANNEL_RE = re.compile('^channel\.(?P<name>[^.]+)\..*$')
+        def _name(x):
+            m = CHANNEL_RE.match(x)
+            if m:
+                return m.groupdict()['name']
+            else:
+                None
+        ops = self.config.options('irclogs')
+        # set makes uniq
+        return filter(None, set(map(_name, map(lambda x: x[0], ops))))
 
     def get_provider(self, name):
         # TODO: generalize
@@ -194,26 +104,42 @@ class IrcLogsView(Component):
         context = {}
         entries = {}
         today = datetime.now()
-        context['cal'] = self._generate_calendar(req, entries)
+        context['channel'] = req.args['channel']
         context['calendar'] = req.href.chrome('common', 'ics.png')
-        context['year'] = int(req.args.get('year', today.year))
-        context['day'] = int(req.args.get('day', today.day))
-        context['month'] = int(req.args.get('month', today.month))
+        context['year'] = int(req.args.get('year') or today.year)
+        context['day'] = int(req.args.get('day') or today.day)
+        context['month'] = int(req.args.get('month') or today.month)
         context['month_name'] = month_name[context['month']]
         context['firstDay'] = 3
         context['firstMonth'] = 8
         context['firstYear'] = 1977
+        context['nojscal'] = generate_nojs_calendar(req, context, entries)
 
         # TODO: do this for each channel, instead of hardcode
-        channel = 'test2'
         provider = self.get_provider('file')
-        lines = provider.get_events_in_range(channel, datetime(context['year'], context['month'], context['day'], 0, 0, 0, tzinfo=req.tz), datetime(context['year'], context['month'], context['day']+1, 0, 0, 0, tzinfo=req.tz))
+        start = datetime(context['year'], context['month'], context['day'], 
+                0, 0, 0, tzinfo=req.tz)
+        end = datetime(context['year'], context['month'], context['day']+1, 
+                0, 0, 0, tzinfo=req.tz)
+        lines = provider.get_events_in_range(context['channel'], start, end)
 
         context['viewmode'] = 'day'
         context['current_date'] = '%02d/%02d/%04d'%(context['month'], context['day'], context['year'])
         context['int_month'] = context['month']-1
 
-        context['lines'] = self._render_lines(lines)
+        def _map(line):
+            if line.get('nick'):
+                line['nick'] = to_unicode(line['nick'], self.charset)
+            if line.get('nick') in self.hidden_users:
+                line.update({'hidden': True})
+            if line['type'] == 'comment':
+                line['nickcls'] = 'nick-%d' % (sum(ord(c) for c in line['nick']) % 8)
+            if line['message']:
+                line['message'] = to_unicode(line['message'], self.charset)
+            return line
+        def _hide(l):
+            return not l.get('hidden')
+        context['lines'] = filter(_hide, map(_map, lines))
 
         # handle if display type is html or an external feed
         if req.args['feed'] is not None:

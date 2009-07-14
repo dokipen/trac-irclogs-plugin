@@ -6,136 +6,114 @@
   <xi:include href="layout.html" />
   <xi:include href="irclogs_macros.html" />
   
- <head>
+<head>
  <title>Team Chat Logs</title>
 </head>
-  <body> 
+<body> 
   <div id="content" class="irclogs">
+    <div id="chat-title">
       <h1>Team Chat Logs</h1>
-      <div id="content" class="error" py:if="error">
-        <div class="message">${message}</div>
-      </div>
-      <div id="nojscal" style="display: block;">
-        <table class="minical">
-          <tr class="head">
-            <th colspan="7">${year} ${int_month}</th>
-          </tr>
-          <tr class="days">
-            <th>Mo</th>
-            <th>Tu</th>
-            <th>We</th>
-            <th>Th</th>
-            <th>Fr</th>
-            <th>Sa</th>
-            <th>Su</th>
-          </tr>
-          <tr class="week" py:for="week in cal.weeks">
-            <py:for each="day in week">
-              <td py:if="day.empty" class="empty">&nbsp;</td>
-              <td py:if="not day.empty" class="${day.has_log and 'has' or 'non'}_log">
-                <a href="${day.href}">${day.caption}</a>
-              </td>
-            </py:for>
-          </tr>
-          <tr class="nav">
-            <td><a href="${cal.prev_year.href}">&lt;&lt;</a></td>
-            <td><a href="${cal.prev_month.href}">&lt;</a></td>
-            <td colspan="3">&nbsp;</td>
-            <td><a href="${cal.next_month.href}">&gt;</a></td>
-            <td><a href="${cal.next_year.href}">&gt;&gt;</a></td>
-          </tr>
-        </table>
-      </div>
-      <py:choose test="viewmode">
-        <py:when test="'years'">
-          <h2>Years</h2>
-          <ul class="years">
-            <li py:for="year in years"><a href="${year.href}">${year.caption}</a></li>
-          </ul>
-        </py:when>
-        <py:when test="'months'">
-          <h2>Logs for ${year}</h2>
-          <ul class="months">
-            <li py:for="month in months"><a href="${month.href}">${month.caption} ${year}</a></li>
-          </ul>
-        </py:when>
-        <py:when test="'days'">
-          <h2>Logs for ${month} ${year}</h2>
-          <ul class="days">
-            <li py:for="day in days"><a href="${day.href}">${month} ${day.caption}, ${year}</a></li>
-          </ul>
-        </py:when>
-        <py:otherwise> 
-          <h2>${month_name} ${day}, ${year}</h2>
-          <div id="irclog-controls">
-            <input type="checkbox" id="showactions">Display Announcements</input>
-            <div id="jscal"> <!-- style="display: none;"-->
-              <div class="navcal">
-                <a id="date-pick-trigger" href="#">
-                  <img src="${calendar}"/>
-                  Select Date
-                </a>
-                <div class="cal-wrap" style="display: none;">
-                  <div id="date-pick"></div>
-                </div>
-              </div>
-            </div>
-          <br style="clear:both"/>
+      <h2>${month_name} ${day}, ${year}</h2>
+    </div>
+    <div id="content" class="error" py:if="error">
+      <div class="message">${message}</div>
+    </div>
+    <div id="nojscal" style="display: block;">
+      <table class="minical">
+        <tr class="head">
+          <th colspan="7">${year} ${int_month}</th>
+        </tr>
+        <tr class="days">
+          <th>Mo</th>
+          <th>Tu</th>
+          <th>We</th>
+          <th>Th</th>
+          <th>Fr</th>
+          <th>Sa</th>
+          <th>Su</th>
+        </tr>
+        <tr class="week" py:for="week in nojscal.weeks">
+          <py:for each="day in week">
+            <td py:if="day.empty" class="empty">&nbsp;</td>
+            <td py:if="not day.empty" class="${day.has_log and 'has' or 'non'}_log">
+              <a href="${day.href}">${day.caption}</a>
+            </td>
+          </py:for>
+        </tr>
+        <tr class="nav">
+          <td><a href="${nojscal.prev_year.href}">&lt;&lt;</a></td>
+          <td><a href="${nojscal.prev_month.href}">&lt;</a></td>
+          <td colspan="3">&nbsp;</td>
+          <td><a href="${nojscal.next_month.href}">&gt;</a></td>
+          <td><a href="${nojscal.next_year.href}">&gt;&gt;</a></td>
+        </tr>
+      </table>
+    </div><!-- end nojs cal-->
+    <br style="clear:both"/>
+    <div id="irclog-controls" style="display: none;">
+      <input type="checkbox" id="showactions"> Display announcements</input>
+      <div id="jscal"> <!-- style="display: none;"-->
+        <div class="navcal">
+          <a id="date-pick-trigger" href="#">
+            <img src="${calendar}"/>
+            Select Date
+          </a>
+          <div class="cal-wrap" style="display: none;">
+            <div id="date-pick"></div>
           </div>
-          <div py:if="missing">
-            No logfile for this day.
-          </div>
-          ${irclog_table(lines,'searchable')}
-        </py:otherwise>
-      </py:choose>
-      <script type="text/javascript">
-        date = new Date();
-        <py:if test="year and month and day">
-          date.setFullYear(${year}, ${month}-1, ${day});
-        </py:if>
-        <py:if test="firstYear and firstMonth and firstDay">
-          minDate = new Date();
-          minDate.setFullYear(${firstYear}, ${firstMonth}-1, ${firstDay})
-        </py:if>
+        </div>
+      </div>
+      <br style="clear:both"/>
+    </div>
+    <div py:if="missing">
+      No logfile for this day.
+    </div>
+    ${irclog_table(lines,'searchable')}
+    <script type="text/javascript">
+      date = new Date();
+      <py:if test="year and month and day">
+        date.setFullYear(${year}, ${month}-1, ${day});
+      </py:if>
+      <py:if test="firstYear and firstMonth and firstDay">
+        minDate = new Date();
+        minDate.setFullYear(${firstYear}, ${firstMonth}-1, ${firstDay})
+      </py:if>
 
-        jQuery(function($) {
-          jQuery('#date-pick').datepicker({
-            dateFormat: 'yy/mm/dd/',
-            onSelect: function(dateTxt, inst) {
-              window.location.href = '${req.base_path}/irclogs/'+dateTxt;
-              $('.cal-wrap').toggle('blind');
-            },
-            defaultDate: date,
-            showButtonPanel: true,
-            closeText: 'Done',
-            changeMonth: true,
-            changeYear: true,
-            maxDate: new Date()
-            <py:if test="firstYear and firstMonth and firstDay">
-              , minDate: minDate
-            </py:if>
-          });
-          $('#date-pick-trigger').bind('click', function() {
+      jQuery(document).ready(function($) {
+        jQuery('#date-pick').datepicker({
+          dateFormat: 'yy/mm/dd/',
+          onSelect: function(dateTxt, inst) {
+            window.location.href = '${req.base_path}/irclogs/${channel}/'+dateTxt;
             $('.cal-wrap').toggle('blind');
-          });
+          },
+          defaultDate: date,
+          showButtonPanel: true,
+          closeText: 'Done',
+          changeMonth: true,
+          changeYear: true,
+          maxDate: new Date()
+          <py:if test="firstYear and firstMonth and firstDay">
+            , minDate: minDate
+          </py:if>
         });
-        jQuery(document).ready(function($) {
-            $('#jscal').show();
-            $('#nojscal').hide();
-            $('#showactions').show();
-            $('#showactions').click(function(e) {
-              if ($('#showactions').checked()) {
-                $$('.irclog tr').show();
-              } else {
-                $$('.irclog tr').hide();
-                $$('.comment').show();
-              }
-            });
+        $('#date-pick-trigger').click(function() {
+          $('.cal-wrap').toggle('blind');
+        });
+        $('#showactions').click(function(e) {
+          if ($('#showactions').checked()) {
+            $$('.irclog tr').show();
+          } else {
             $$('.irclog tr').hide();
             $$('.comment').show();
+          }
         });
-      </script>        
-      <br style="clear:both" />
-    </div>
-  </body>
+        $$('.irclog tr').hide();
+        $$('.comment').show();
+        $('#irclog-controls').show();
+        $('#nojscal').hide();
+      });
+    </script>        
+    <br style="clear:both" />
+  </div>
+</body>
 </html>
