@@ -88,4 +88,4 @@ class IrcLogQuoteMacro(WikiMacroBase):
         )
         return Chrome(self.env).load_template('macro_quote.html') \
                                     .generate(**data)
-    
+
