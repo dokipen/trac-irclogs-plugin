@@ -4,9 +4,9 @@
 <div class="irclogs" id="liveirclog"><p>Loading the IRC log...</p></div>
 <script type="text/javascript">
   jQuery(document).ready(function($) {
-    $('#liveirclog').load("${href('irclogs','feed',count)}");
+    $('#liveirclog').load("${href('irclogs', channel, 'feed', count)}");
     $.timer($poll_frequency, function(timer) {
-      $('#liveirclog').load("${href('irclogs','feed',count)}");
+      $('#liveirclog').load("${href('irclogs', channel, 'feed', count)}");
     });
   });
 </script>

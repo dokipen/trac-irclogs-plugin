@@ -12,7 +12,7 @@ class IrcLogWiki(Component):
 
     date_re = re.compile(
             r'^(?P<channel>.+)-UTC(?P<year>\d{4})' +
-            r'-(?P<month>\d{2})-(?P<day>\d{2})')
+            r'-(?P<month>\d{2})-(?P<day>\d{2})(T(?P<time>\d{2}:\d{2}:\d{2}))?$')
 
     # IWikiSyntaxProvider methods
     def get_wiki_syntax(self):
@@ -30,4 +30,4 @@ class IrcLogWiki(Component):
                          m.group('channel'),
                          m.group('year'),
                          m.group('month'),
-                         m.group('day'),) + '#%s' % target)
+                         m.group('day'),) + '#%s' % m.group('time'))

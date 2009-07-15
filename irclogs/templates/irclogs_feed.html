@@ -5,6 +5,6 @@
 
 <div py:if="missing" style="padding:5px;">No chat logs for today</div>
 <div class="irclog">
-${irclog_table(lines,page_href=href('irclogs',year,month,day))}
+${irclog_table(lines,page_href=href('irclogs',channel,year,month,day))}
 </div>
 </html>

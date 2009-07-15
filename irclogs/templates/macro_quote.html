@@ -6,8 +6,8 @@
   <xi:include href="irclogs_macros.html" />
 
 <div class="irclogs quote">
-Chat Excerpt from <a href="${href('irclogs',excerpt_date.year,excerpt_date.month,excerpt_date.day)}#${utc_dt}">${excerpt_date.month}/${excerpt_date.day}/${excerpt_date.year}</a>
+Chat Excerpt from <a href="${href('irclogs', channel, year, month, day)}#${time}">${month}/${day}/${year}</a>
 
-${irclog_table(lines,page_href=href('irclogs',excerpt_date.year,excerpt_date.month,excerpt_date.day))}
+${irclog_table(lines,page_href=href('irclogs', channel, year, month, day))}
 </div>
 </html>

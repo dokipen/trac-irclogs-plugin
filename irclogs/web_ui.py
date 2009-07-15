@@ -29,8 +29,11 @@ class IrcLogsView(Component):
 
     implements(INavigationContributor, ITemplateProvider, IRequestHandler, \
                IPermissionRequestor)
-    _url_re = re.compile(r'^/irclogs/(?P<channel>\w+)(/(?P<year>\d{4})(/(?P<month>\d{2})'
-                         r'(/(?P<day>\d{2}))?)?)?(/(?P<feed>feed)(/(?P<feed_count>\d+?))?)?/?$')
+    _url_re = re.compile(
+            r'^/irclogs/(?P<channel>\w+)'
+            r'(/(?P<year>\d{4})(/(?P<month>\d{2})'
+            r'(/(?P<day>\d{2}))?)?)?(/(?P<feed>feed)'
+            r'(/(?P<feed_count>\d+?))?)?/?$')
     charset = Option('irclogs', 'charset', 'utf-8',
                      doc='Channel charset')
 
@@ -94,6 +97,20 @@ class IrcLogsView(Component):
         for p in self.providers:
             return p
             
+    def _map_lines(self, l):
+        if l.get('nick'):
+            l['nick'] = to_unicode(l['nick'], self.charset)
+        if l.get('nick') in self.hidden_users:
+            l.update({'hidden': True})
+        if l['type'] == 'comment':
+            l['nickcls'] = 'nick-%d' % (sum(ord(c) for c in l['nick']) % 8)
+        if l['message']:
+            l['message'] = to_unicode(l['message'], self.charset)
+        return l
+
+    def _hide_nicks(self, l):
+        return not l.get('hidden')
+
     def process_request(self, req):
         req.perm.assert_permission('IRCLOGS_VIEW')
         add_stylesheet(req, 'irclogs/css/jquery-ui.css')
@@ -104,7 +121,7 @@ class IrcLogsView(Component):
         context = {}
         entries = {}
         today = datetime.now()
-        context['channel'] = req.args['channel']
+        context['channel'] = req.args['channel'] 
         context['calendar'] = req.href.chrome('common', 'ics.png')
         context['year'] = int(req.args.get('year') or today.year)
         context['day'] = int(req.args.get('day') or today.day)
@@ -124,26 +141,17 @@ class IrcLogsView(Component):
         lines = provider.get_events_in_range(context['channel'], start, end)
 
         context['viewmode'] = 'day'
-        context['current_date'] = '%02d/%02d/%04d'%(context['month'], context['day'], context['year'])
+        context['current_date'] = '%02d/%02d/%04d'%(context['month'], 
+                context['day'], context['year'])
         context['int_month'] = context['month']-1
-
-        def _map(line):
-            if line.get('nick'):
-                line['nick'] = to_unicode(line['nick'], self.charset)
-            if line.get('nick') in self.hidden_users:
-                line.update({'hidden': True})
-            if line['type'] == 'comment':
-                line['nickcls'] = 'nick-%d' % (sum(ord(c) for c in line['nick']) % 8)
-            if line['message']:
-                line['message'] = to_unicode(line['message'], self.charset)
-            return line
-        def _hide(l):
-            return not l.get('hidden')
-        context['lines'] = filter(_hide, map(_map, lines))
+        context['lines'] = filter(
+            self._hide_nicks, 
+            map(self._map_lines, lines)
+        )
 
         # handle if display type is html or an external feed
         if req.args['feed'] is not None:
-            if not context['missing']:
+            if len(context['lines']) > 0:
                 context['lines'] = context['lines'] \
                                     [:int(req.args.get('feed_count',10))]
             return 'irclogs_feed.html', context, None 
