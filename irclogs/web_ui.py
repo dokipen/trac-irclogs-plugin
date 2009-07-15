@@ -92,10 +92,16 @@ class IrcLogsView(Component):
         # set makes uniq
         return filter(None, set(map(_name, map(lambda x: x[0], ops))))
 
-    def get_provider(self, name):
+    def get_provider(self, channel):
         # TODO: generalize
+        name = self.config.get('irclogs', 'channel.%s.provider'%(channel))
+        if not name:
+            name = self.config.get('irclogs', 'provider', 'file')
         for p in self.providers:
-            return p
+            if name == p.get_name():
+                return p
+        raise Exception(
+                "%s IRCLogsProvider for channel %s not found."%(name, channel))
             
     def _map_lines(self, l):
         if l.get('nick'):
@@ -133,7 +139,7 @@ class IrcLogsView(Component):
         context['nojscal'] = generate_nojs_calendar(req, context, entries)
 
         # TODO: do this for each channel, instead of hardcode
-        provider = self.get_provider('file')
+        provider = self.get_provider(context['channel'])
         start = datetime(context['year'], context['month'], context['day'], 
                 0, 0, 0, tzinfo=req.tz)
         end = datetime(context['year'], context['month'], context['day']+1, 

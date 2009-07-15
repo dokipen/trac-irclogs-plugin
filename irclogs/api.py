@@ -21,10 +21,16 @@ class IIRCLogsProvider(Interface):
             * comment : comment
             * action : action
             * kicked : kick
-            * 
 
 
 
+        """
+
+    def get_name(self):
+        """Returns the name of the provider as used in the configuration.
+        ex.
+        [irclogs]
+        channel.#test2.provider = file
         """
 
 

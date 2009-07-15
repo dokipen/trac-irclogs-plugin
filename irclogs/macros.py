@@ -70,7 +70,7 @@ class IrcLogQuoteMacro(WikiMacroBase):
         start = datetime(*strptime(utc_dt, self.date_format)[:6], 
                 tzinfo=timezone('utc'))
         end = start + timedelta(seconds=offset)
-        provider = irclogs.get_provider('file')
+        provider = irclogs.get_provider(channel)
         lines = provider.get_events_in_range(channel, start, end)
         lines = filter(irclogs._hide_nicks, map(irclogs._map_lines, lines))
 

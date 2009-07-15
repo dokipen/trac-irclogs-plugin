@@ -38,7 +38,7 @@ from irclogs.api import IIRCLogsProvider
 # values
 OLDDATE = datetime(1977,8,3,0,0,0,tzinfo=timezone('utc'))
 
-def merge_iseq(iterables, key=operator.lt):
+def merge_iseq(iterables, key):
     """Thanks kniht!  Wrapper for heapq.merge that allows specifying a key.
     http://bitbucket.org/kniht/scraps/src/tip/python/merge_iseq.py
     """
@@ -51,6 +51,11 @@ def merge_iseq(iterables, key=operator.lt):
 class FileIRCLogProvider(Component):
     """Provide logs from irc log files.  All default regex config parameters
     match the default Supybot log files, where defaults are provided.
+    The gozerbot log format is also supported out of the box by setting 
+    [irclogs]
+    format = gozer
+    # or 
+    channel.#test.format = gozer
     """
 
     implements(IIRCLogsProvider)
@@ -214,6 +219,57 @@ class FileIRCLogProvider(Component):
                 'logs/simple/%(channel_name)s.%Y%m%d.slog'])
     Option('irclogs', 'format.gozer.timestamp_format', '%Y-%m-%d %H:%M:%S')
 
+    # IRCLogsProvider interface
+    def get_events_in_range(self, channel_name, start, end):
+        """Channel is the config channel name.  start and end are datetimes
+        in the users tz.  If the start and end times have different timezones,
+        you're fucked."""
+        channel = self.channel(channel_name)
+        tzname = channel['format'].get('timezone', 'utc')
+        try:
+            tz = timezone(tzname)
+        except UnknownTimeZoneError:
+            self.log.warn("input timezone %s not supported, irclogs will be "\
+                    "parsed as UTC")
+            tzname = 'UTC'
+            tz = timezone(tzname)
+        dates = self._get_file_dates(start, end, tz)
+        filesets = self._get_files(channel, dates)
+        # target tz
+        # convert to pytz timezone
+        try:
+            ttz = timezone(start.tzname())
+        except UnknownTimeZoneError:
+            self.log.warn("timezone %s not supported, irclog output will be "\
+                    "%s"%(start.tzname(), tzname))
+            ttz = tz
+
+
+        def _get_lines():
+            for fileset in filesets:
+                # only existing files
+                files = filter(lambda x: os.path.exists(x), fileset)
+                if len(files) > 0:
+                    files = [file(f) for f in files]
+                    parsers = list(
+                            [self.parse_lines(f, format=channel['format'], tz=tz, target_tz=ttz) for f in files])
+                    def _key(x):
+                        return x.get('timestamp', OLDDATE)
+                    for l in merge_iseq(parsers, key=_key): 
+                        yield l
+                    [f.close() for f in files]
+
+        for line in _get_lines():
+            if line.get('timestamp'):
+                if line['timestamp'] >= start and line['timestamp'] < end:
+                    yield line
+            else:
+                yield line
+    
+    def get_name(self):
+        return 'file'
+    # end IRCLogsProvider interface
+                
     def _get_prefix_options(self, prefix):
         """Helper method to get options out of the config object.  Gets all
         options that start with prefix, and also removes prefix portion."""
@@ -275,52 +331,6 @@ class FileIRCLogProvider(Component):
                 self.log.debug("parsing %s"%(fileformat))
             yield filepaths
 
-    def get_events_in_range(self, channel_name, start, end):
-        """Channel is the config channel name.  start and end are datetimes
-        in the users tz.  If the start and end times have different timezones,
-        you're fucked."""
-        channel = self.channel(channel_name)
-        tzname = channel['format'].get('timezone', 'utc')
-        try:
-            tz = timezone(tzname)
-        except UnknownTimeZoneError:
-            self.log.warn("input timezone %s not supported, irclogs will be "\
-                    "parsed as UTC")
-            tzname = 'UTC'
-            tz = timezone(tzname)
-        dates = self._get_file_dates(start, end, tz)
-        filesets = self._get_files(channel, dates)
-        # target tz
-        # convert to pytz timezone
-        try:
-            ttz = timezone(start.tzname())
-        except UnknownTimeZoneError:
-            self.log.warn("timezone %s not supported, irclog output will be "\
-                    "%s"%(start.tzname(), tzname))
-            ttz = tz
-
-
-        def _get_lines():
-            for fileset in filesets:
-                # only existing files
-                files = filter(lambda x: os.path.exists(x), fileset)
-                if len(files) > 0:
-                    files = [file(f) for f in files]
-                    parsers = list(
-                            [self.parse_lines(f, format=channel['format'], tz=tz, target_tz=ttz) for f in files])
-                    def _key(x):
-                        return x.get('timestamp', OLDDATE)
-                    for l in merge_iseq(parsers, key=_key): #(lambda x: x['timestamp'])):
-                        yield l
-                    [f.close() for f in files]
-
-        for line in _get_lines():
-            if line.get('timestamp'):
-                if line['timestamp'] >= start and line['timestamp'] < end:
-                    yield line
-            else:
-                yield line
-                
     def channel(self, name):
         """Get channel data by name.
         
