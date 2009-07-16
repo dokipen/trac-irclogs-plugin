@@ -5,7 +5,7 @@
 
 <div py:if="missing" style="padding:5px;">No chat logs for today</div>
 <div class="irclog">
-Live Chat Excerpt:
+Live <a href="${href('irclogs', channel)}">Chat</a> Excerpt:
 
 ${irclog_table(lines,page_href=href('irclogs',channel,year,month,day))}
 </div>
