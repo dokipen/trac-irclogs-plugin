@@ -215,8 +215,8 @@ class FileIRCLogProvider(Component):
 
     Option('irclogs', 'format.gozer.basepath', '/home/gozerbot/.gozerbot/')
     ListOption('irclogs', 'format.gozer.paths', 
-            ['logs/simple/%(channel)s.%Y%m%d.slog', 
-                'logs/simple/%(channel_name)s.%Y%m%d.slog'])
+            ['logs/%(network)s/simple/%(channel)s.%Y%m%d.slog', 
+                'logs/%(network)s/simple/%(channel_name)s.%Y%m%d.slog'])
     Option('irclogs', 'format.gozer.timestamp_format', '%Y-%m-%d %H:%M:%S')
 
     # IRCLogsProvider interface
