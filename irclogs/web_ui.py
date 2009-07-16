@@ -23,6 +23,7 @@ from trac.util.datefmt import utc
 from genshi.builder import tag
 from irclogs.api import *
 from irclogs.nojs import generate_nojs_calendar
+from irclogs import util
 
 class IrcLogsView(Component):
     providers = ExtensionPoint(IIRCLogsProvider)

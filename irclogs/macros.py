@@ -9,6 +9,7 @@ from trac.wiki.macros import WikiMacroBase
 from trac.wiki.formatter import system_message
 from trac.wiki.api import parse_args
 from web_ui import IrcLogsView
+from irclogs import util
 
 class IrcLogLiveMacro(WikiMacroBase):
     """Displays a live in-page feed of the current IRC log.  

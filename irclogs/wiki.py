@@ -5,6 +5,8 @@ from trac.wiki import IWikiSyntaxProvider
 from trac.wiki.formatter import system_message
 from trac.util.html import html
 
+from irclogs import util
+
 class IrcLogWiki(Component):
     """Creates a link to the IRC log viewer for a particular date
        including the anchor to the message timestamp"""

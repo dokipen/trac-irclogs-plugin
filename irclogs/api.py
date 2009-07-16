@@ -1,5 +1,7 @@
 from trac.core import *
 
+from irclogs import util
+
 class IIRCLogsProvider(Interface):
     """An interface for different sources of irc logs.  DB and file 
     implementations are provided."""

@@ -33,20 +33,11 @@ from trac.core import *
 from trac.config import Option, ListOption
 
 from irclogs.api import IIRCLogsProvider
+from irclogs import util
 
 # this is used for comparison only, and never included in yielded
 # values
 OLDDATE = datetime(1977,8,3,0,0,0,tzinfo=timezone('utc'))
-
-def merge_iseq(iterables, key):
-    """Thanks kniht!  Wrapper for heapq.merge that allows specifying a key.
-    http://bitbucket.org/kniht/scraps/src/tip/python/merge_iseq.py
-    """
-    def keyed(v):
-        return key(v), v
-    iterables = map(lambda x: itertools.imap(keyed, x), iterables)
-    for item in heapq.merge(*iterables):
-        yield item[1]
 
 class FileIRCLogProvider(Component):
     """Provide logs from irc log files.  All default regex config parameters
@@ -255,7 +246,7 @@ class FileIRCLogProvider(Component):
                             [self.parse_lines(f, format=channel['format'], tz=tz, target_tz=ttz) for f in files])
                     def _key(x):
                         return x.get('timestamp', OLDDATE)
-                    for l in merge_iseq(parsers, key=_key): 
+                    for l in util.merge_iseq(parsers, _key): 
                         yield l
                     [f.close() for f in files]
 
@@ -270,18 +261,6 @@ class FileIRCLogProvider(Component):
         return 'file'
     # end IRCLogsProvider interface
                 
-    def _get_prefix_options(self, prefix):
-        """Helper method to get options out of the config object.  Gets all
-        options that start with prefix, and also removes prefix portion."""
-        if not prefix.endswith('.'):
-            prefix = "%s."%(prefix)
-        options = self.config.options('irclogs')
-
-        # pair[0] is the  name and pair[1] is the value
-        _filter = lambda pair: pair[0].startswith(prefix)
-        _map = lambda pair: (re.sub('^%s'%(prefix), '', pair[0]), pair[1])
-        return dict(map(_map, filter(_filter, options)))
-
     def _get_file_dates(self, start, end, file_tz='utc'):
         """Get files that are within the start-end range, taking into
         account that the file timezone can be different from the start-end
@@ -356,7 +335,7 @@ class FileIRCLogProvider(Component):
         default = {'format': self.format, 'network': self.network}
 
         # we only want options for this channel
-        options = self._get_prefix_options('channel.%s'%(name))
+        options = util.get_prefix_options('channel.%s'%(name), self.config)
         default.update(options)
         default['format'] = self.format(default['format'])
         return default
@@ -396,7 +375,8 @@ class FileIRCLogProvider(Component):
         format.gozer.timestamp_regex = 'otherblah'
 
         This method will return all options for a named format."""
-        format_options = self._get_prefix_options('format.%s'%(name))
+        format_options = util.get_prefix_options(
+                'format.%s'%(name), self.config)
         ret_format = self.default_format()
         ret_format.update(format_options)
         return ret_format

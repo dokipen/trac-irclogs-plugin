@@ -7,6 +7,7 @@
 import os
 import sys
 import shutil
+from irclogs import util
 try:
     from pyndexter import Framework, READWRITE
     from pyndexter.util import quote
