@@ -159,7 +159,7 @@ class IrcLogsView(Component):
         if req.args['feed'] is not None:
             if len(context['lines']) > 0:
                 context['lines'] = context['lines'] \
-                                    [:int(req.args.get('feed_count',10))]
+                        [-int(req.args.get('feed_count',10)):]
             return 'irclogs_feed.html', context, None 
         else:
             return 'irclogs.html', context, None
