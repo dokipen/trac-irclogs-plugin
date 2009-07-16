@@ -30,7 +30,7 @@ class IrcLogsView(Component):
     implements(INavigationContributor, ITemplateProvider, IRequestHandler, \
                IPermissionRequestor)
     _url_re = re.compile(
-            r'^/irclogs/(?P<channel>\w+)'
+            r'^/irclogs/(?P<channel>[^/]+)'
             r'(/(?P<year>\d{4})(/(?P<month>\d{2})'
             r'(/(?P<day>\d{2}))?)?)?(/(?P<feed>feed)'
             r'(/(?P<feed_count>\d+?))?)?/?$')
