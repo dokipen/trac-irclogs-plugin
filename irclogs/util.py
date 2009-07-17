@@ -27,19 +27,28 @@ def get_prefix_options(prefix, c):
 def get_channel_by_name(c, name):
     retoptions = {
         'channel': c.get('irclogs', 'channel'),
-        'netowrk': c.get('irclogs', 'network'),
+        'network': c.get('irclogs', 'network'),
         'provider': c.get('irclogs', 'provider'),
+        'name': name,
     }
-    options = get_prefix_options('channel.%s.'%(name), c)
-    retoptions.update(options)
+    if name:
+        options = get_prefix_options('channel.%s.'%(name), c)
+        if not options:
+            retoptions['name'] = None
+        retoptions.update(options)
     return retoptions
 
-channel_re = None
+channel_re = re.compile('^channel\.(?P<channel>[^.]+)\.channel$')
 def get_channel_by_channel(c, channel):
     ops = c.options('irclogs')
-    vals = filter(lambda x: (re.match('^channel\.[^.]+\.channel$', x[0]) and x[1] == channel), ops)
-    if len(vals) > 1:
-        raise Exception('multiple channels match %s'%(channel))
-    if not len(vals):
+    vals = filter(lambda x: (channel_re.match(x[0]) and x[1] == channel), ops)
+    if not vals:
+        if c.get('irclogs', 'channel') == channel:
+            return get_channel_by_name(c, None)
         raise Exception('channel %s not found'%(channel))
-    m = re.match('^channel\.(?P<channel>[^.]+)\.channel$', vals[0])
+    default_channel = get_channel_by_name(c, None)
+    if len(vals) > 1 or vals[0][1] == default_channel['channel']:
+        raise Exception('multiple channels match %s'%(channel))
+    m = channel_re.match(vals[0][0])
+    return get_channel_by_name(c, m.group('channel'))
+
