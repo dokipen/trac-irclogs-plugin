@@ -19,7 +19,6 @@ class IrcLogLiveMacro(WikiMacroBase):
      * number of messages displayed - defaults to 10
     """
     def expand_macro(self, formatter, name, content):
-        print 'fuck you'
         args, kw = parse_args(content)
         self.log.error(args)
         channel = args and args[0] 
