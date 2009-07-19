@@ -3,6 +3,5 @@ import web_ui
 import macros
 import search
 import wiki
-import provider
-from irclogs import util
+from irclogs import util, provider
 from console import update_irc_search
