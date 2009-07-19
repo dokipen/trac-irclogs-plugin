@@ -20,7 +20,6 @@ class IrcLogLiveMacro(WikiMacroBase):
     """
     def expand_macro(self, formatter, name, content):
         args, kw = parse_args(content)
-        self.log.error(args)
         channel = args and args[0] 
         poll_frequency = int(args and args[1] or 60)*1000
         count = int(args and args[2] or 10)
@@ -59,8 +58,6 @@ class IrcLogQuoteMacro(WikiMacroBase):
         if not (utc_dt and channel):
             return system_message('IrcLogQuote: arguments required (channel,'\
                     ' timestamp(UTCYYYY-MM-DDTHH:MM:SS), seconds)')
-        self.log.error(args)
-        self.log.error(kw)
         d = self.date_re.match(utc_dt.strip())
         if not d:
             return system_message('IrcLogQuote: Invalid timestamp format')
