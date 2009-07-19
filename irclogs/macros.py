@@ -23,7 +23,7 @@ class IrcLogLiveMacro(WikiMacroBase):
         self.log.error(args)
         channel = args and args[0] 
         poll_frequency = int(args and args[1] or 60)*1000
-        count = int(args and args[1] or 10)
+        count = int(args and args[2] or 10)
 
         if not (channel and poll_frequency and count):
             return system_message('Incorrect arguments: ' 
