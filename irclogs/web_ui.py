@@ -159,8 +159,12 @@ class IrcLogsView(Component):
         # handle if display type is html or an external feed
         if req.args['feed'] is not None:
             if len(context['lines']) > 0:
-                context['lines'] = context['lines'] \
-                        [-int(req.args.get('feed_count',10)):]
+                # TODO: we should go to an older date rather then just 
+                # get latest lines when number requested exceeds
+                # the number in context['lines'].
+                lines = int(req.args.get('feed_count', 10))
+                if (len(context['lines']) >= lines):
+                    context['lines'] = context['lines'][-lines:]
             return 'irclogs_feed.html', context, None 
         else:
             return 'irclogs.html', context, None

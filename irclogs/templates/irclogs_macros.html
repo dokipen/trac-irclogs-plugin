@@ -16,7 +16,7 @@
               <py:when test="'comment'">
                 <td class="time">[<a href="${page_href}#${line['timestamp'].time()}" title="${line['timestamp'].time()}" id="${line['timestamp'].time()}">${line['timestamp'].time()}</a>]</td>
                 <td class="left" >&lt;<span class="${line.get('nickcls')}">${line.get('nick')}</span>&gt;</td>
-                <td class="right">${line['type'] != 'comment' and line.get('nick') + ' ' or '' }${line['comment']}</td>
+                <td class="right">${line['type'] != 'comment' and line.get('nick') + ' ' or '' }${to_unicode(line['comment'])}</td>
               </py:when>
               <py:when test="'other'">
                 <td class="time">[xxxxxxxxxxxx]</td>
