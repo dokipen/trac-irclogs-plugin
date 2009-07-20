@@ -355,8 +355,8 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
     def test_gozer_format(self):
         df = self.out.format('gozer')
         self.assertEquals('/home/gozerbot/.gozerbot/', df['basepath'])
-        self.assertEquals(['logs/simple/%(channel)s.%Y%m%d.slog',
-            'logs/simple/%(channel_name)s.%Y%m%d.slog'], df['paths'])
+        self.assertEquals(['logs/%(network)s/simple/%(channel)s.%Y%m%d.slog',
+            'logs/%(network)s/simple/%(channel_name)s.%Y%m%d.slog'], df['paths'])
         self.assertEquals('%Y-%m-%d %H:%M:%S', df['timestamp_format'])
         self.assertEquals('utc', df['timezone'])
         self.assert_(df['timestamp_regex'])
