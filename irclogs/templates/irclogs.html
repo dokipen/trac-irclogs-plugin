@@ -83,7 +83,7 @@
         jQuery('#date-pick').datepicker({
           dateFormat: 'yy/mm/dd/',
           onSelect: function(dateTxt, inst) {
-            window.location.href = '${req.base_path}/irclogs/${channel}/'+dateTxt;
+            window.location.href = '${href('irclogs', channel)}/'+dateTxt;
             $('.cal-wrap').toggle('blind');
           },
           defaultDate: date,
