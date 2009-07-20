@@ -2,11 +2,13 @@ import unittest
 from time import strptime
 from datetime import datetime
 from pytz import timezone
+import re
 
 from trac.core import *
 from trac.test import EnvironmentStub
 
-from irclogs.provider.file import *
+from irclogs.provider.file import FileIRCLogProvider
+from irclogs.api import merge_iseq
 
 class FileIRCLogProviderTestCase(unittest.TestCase):
     def setUp(self):
@@ -444,7 +446,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             parsers.append(self.out.parse_lines(f[0], format=f[1]))
         def _key(x):
             return x.get('timestamp', datetime(1970,1,1,0,0,0, tzinfo=timezone('utc')))
-        lines = list(util.merge_iseq(parsers, key=_key))
+        lines = list(merge_iseq(parsers, key=_key))
         self.assertEquals(39, len(lines))
 
 def suite():

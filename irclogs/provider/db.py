@@ -78,7 +78,7 @@ class DBIRCLogProvider(Component):
                     'comment': l[6]
                 }
             cnx.close()
-        except Exception as e:
+        except Exception, e:
             cnx.close()
             self.log.error(e)
             raise e

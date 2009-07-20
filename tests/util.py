@@ -93,21 +93,21 @@ class UtilTestCase(unittest.TestCase):
         try:
             util.get_channel_by_channel(self.config, '#crazy')
             raise Exception('Expected exception')
-        except Exception as e:
+        except Exception, e:
             self.assertEqual(('channel #crazy not found',), e.args)
 
         self.config.set('irclogs', 'channel.test6.channel', '#test1')
         try:
             util.get_channel_by_channel(self.config, '#test1')
             raise Exception('Expected exception')
-        except Exception as e:
+        except Exception, e:
             self.assertEqual(('multiple channels match #test1',), e.args)
 
         self.config.set('irclogs', 'channel.test7.channel', '#test2')
         try:
             util.get_channel_by_channel(self.config, '#test2')
             raise Exception('Expected exception')
-        except Exception as e:
+        except Exception, e:
             self.assertEqual(('multiple channels match #test2',), e.args)
 
 def suite():

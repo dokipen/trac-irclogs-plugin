@@ -372,7 +372,7 @@ class FileIRCLogProvider(Component):
         if not format: 
             format = self.default_format()
         if not tz:
-            tz = timezone(self.timezone)
+            tz = timezone(format['timezone'])
 
         def _map(x):
             regex_string = format['%s_regex'%(x)]

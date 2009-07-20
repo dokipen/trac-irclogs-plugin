@@ -40,14 +40,45 @@ class IIRCLogsProvider(Interface):
 
 
 def merge_iseq(iterables, key):
-    """Thanks kniht!  Wrapper for heapq.merge that allows specifying a key.
-    http://bitbucket.org/kniht/scraps/src/tip/python/merge_iseq.py
-    """
+    # key values so we can decide what to sort by
     def keyed(v):
         return key(v), v
     iterables = map(lambda x: itertools.imap(keyed, x), iterables)
+    """
+    This is commented out because it only works on 2.6.  Trying for 2.4
+      compatibility like trac.
+    ""Thanks kniht!  Wrapper for heapq.merge that allows specifying a key.
+    http://bitbucket.org/kniht/scraps/src/tip/python/merge_iseq.py
+    ""
     for item in heapq.merge(*iterables):
         yield item[1]
+    """
+    # start 2.4 hackathon taken from
+    # http://code.activestate.com/recipes/491285/
+    heappop, siftup, _StopIteration = heapq.heappop, heapq._siftup, StopIteration
+
+    h = []
+    h_append = h.append
+    for it in map(iter, iterables):
+        try:
+            next = it.next
+            h_append([next(), next])
+        except _StopIteration:
+            pass
+    heapq.heapify(h)
+
+    while(1):
+        try:
+            while 1:
+                v, next = s = h[0] # raises IndexError when h is empty
+                yield v[1]         # this is a little different since we keyed
+                                   #   the values
+                s[0] = next()      # raises StopIteration when exhausted
+                siftup(h, 0)       # restore heap condition
+        except _StopIteration:
+            heappop(h)              # remove empty iter
+        except IndexError:
+            return
 
 def prefix_options(prefix, options):
     """Helper method to get options out of the config object.  Gets all
