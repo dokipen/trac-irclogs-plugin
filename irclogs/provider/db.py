@@ -33,7 +33,25 @@ class DBIRCLogProvider(Component):
     def get_events_in_range(self, channel_name, start, end):
         ch_mgr = IRCChannelManager(self.env)
         ch = ch_mgr.get_channel_by_name(channel_name)
+        def_tzname = self.config.get('irclogs', 'timezone', 'utc')
+        tzname = ch.get('timezone', def_tzname)
+        self.log.error(tzname)
+        try:
+            tz = timezone(tzname)
+        except UnknownTimeZoneError:
+            self.log.warn("input timezone %s not supported, irclogs will be "\
+                    "parsed as UTC")
+            tzname = 'UTC'
+            tz = timezone(tzname)
         cnx = self._getdb(ch)
+        try:
+            ttz = timezone(start.tzname())
+        except UnknownTimeZoneError:
+            self.log.warn("timezone %s not supported, irclog output will be "\
+                    "%s"%(start.tzname(), tzname))
+            ttz = tz
+        self.log.error(ttz)
+
         try:
             cur = cnx.cursor()
             cur.execute("""
@@ -47,8 +65,11 @@ class DBIRCLogProvider(Component):
               )
             )
             for l in cur:
+                timestamp = l[1]
+                timestamp = timestamp.replace(tzinfo=tz)
+                dt = ttz.normalize(timestamp.astimezone(ttz))
                 yield {
-                    'timestamp': l[1],
+                    'timestamp': dt,
                     'network': l[2],
                     'channel': l[3],
                     'nick': l[4],
