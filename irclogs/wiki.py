@@ -11,7 +11,7 @@ class IrcLogWiki(Component):
     implements(IWikiSyntaxProvider) 
 
     date_re = re.compile(
-            r'^(?P<channel>.+)-UTC(?P<year>\d{4})' +
+            r'^((?P<channel>.+)-)?UTC(?P<year>\d{4})' +
             r'-(?P<month>\d{2})-(?P<day>\d{2})(T(?P<time>\d{2}:\d{2}:\d{2}))?$')
 
     # IWikiSyntaxProvider methods

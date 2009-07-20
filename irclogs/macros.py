@@ -14,25 +14,22 @@ from irclogs.api import IRCChannelManager
 class IrcLogLiveMacro(WikiMacroBase):
     """Displays a live in-page feed of the current IRC log.  
     Can take 3 parameters:
-     * channel
-     * polling frequency (seconds) default to 60
-     * number of messages displayed - defaults to 10
+     * channel: channel
+     * polling_frequency: (seconds) default to 60
+     * count: number of messages displayed - defaults to 10
+
     """
     def expand_macro(self, formatter, name, content):
-        args, kw = parse_args(content)
-        channel = args and args[0] 
-        poll_frequency = int(args and args[1] or 60)*1000
-        count = int(args and args[2] or 10)
-
-        if not (channel and poll_frequency and count):
-            return system_message('Incorrect arguments: ' 
-                'Must be of the format (channel, poll frequency seconds, lines to display)')
+        _, kw = parse_args(content)
+        channel_name = kw.get('channel')
+        poll_frequency = int(kw.get('poll_frequency', 60))*1000
+        count = int(kw.get('count', 10))
 
         add_stylesheet(formatter.req, 'irclogs/css/irclogs.css')
         add_script(formatter.req, 'irclogs/js/jquery.timer.js')
 
         data = Chrome(self.env).populate_data(formatter.req, {
-             'channel': channel,
+             'channel': channel_name,
              'poll_frequency': poll_frequency,
              'count': count
         })
@@ -52,16 +49,17 @@ class IrcLogQuoteMacro(WikiMacroBase):
     date_format = "UTC%Y-%m-%dT%H:%M:%S"
     
     def expand_macro(self, formatter, name, content):
-        args, kw = parse_args(content)
-        channel_name = args and args[0].strip()
-        utc_dt = args and args[1].strip()
-        if not (utc_dt and channel_name):
-            return system_message('IrcLogQuote: arguments required (channel,'\
-                    ' timestamp(UTCYYYY-MM-DDTHH:MM:SS), seconds)')
+        _, kw = parse_args(content)
+        channel_name = kw.get('channel')
+        utc_dt = kw.get('datetime')
+        if not utc_dt:
+            return system_message('IrcLogQuote: arguments required '\
+                '(channel=channel, datetime=timestamp(UTCYYYY-MM-DDTHH:MM:SS), '\
+                'offset=seonds)')
         d = self.date_re.match(utc_dt.strip())
         if not d:
             return system_message('IrcLogQuote: Invalid timestamp format')
-        offset = int(args and len(args)>2 and args[2] or 10)
+        offset = int(kw.get('offset', 10))
 
         irclogs = IrcLogsView(self.env)        
         ch_mgr = IRCChannelManager(self.env)
