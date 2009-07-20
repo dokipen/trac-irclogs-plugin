@@ -6,8 +6,6 @@ from pytz import timezone
 from trac.core import *
 from trac.test import EnvironmentStub
 
-from irclogs import util
-
 class UtilTestCase(unittest.TestCase):
     def setUp(self):
         self.env = EnvironmentStub()

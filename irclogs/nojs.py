@@ -22,8 +22,6 @@ from trac.util.datefmt import utc
 
 from genshi.builder import tag
 from irclogs.api import *
-from irclogs import util
-
 
 def generate_nojs_calendar(req, context, entries):
     weeks = []

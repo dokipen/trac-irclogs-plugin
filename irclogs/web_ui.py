@@ -23,15 +23,12 @@ from trac.util.datefmt import utc
 from genshi.builder import tag
 from irclogs.api import *
 from irclogs.nojs import generate_nojs_calendar
-from irclogs import util
 
 class IrcLogsView(Component):
-    providers = ExtensionPoint(IIRCLogsProvider)
-
     implements(INavigationContributor, ITemplateProvider, IRequestHandler, \
                IPermissionRequestor)
     _url_re = re.compile(
-            r'^/irclogs/(?P<channel>[^/]+)'
+            r'^/irclogs(/(?P<channel>[^/]+))?'
             r'(/(?P<year>\d{4})(/(?P<month>\d{2})'
             r'(/(?P<day>\d{2}))?)?)?(/(?P<feed>feed)'
             r'(/(?P<feed_count>\d+?))?)?/?$')
@@ -46,6 +43,7 @@ class IrcLogsView(Component):
     hidden_users = ListOption('irclogs', 'hidden_users', '', 
                      doc='A list of users that should be hidden by default')
 
+
     # ITemplateProvider methods
     def get_templates_dirs(self):
         from pkg_resources import resource_filename
@@ -57,17 +55,20 @@ class IrcLogsView(Component):
 
     # INavigationContributor methods
     def get_active_navigation_item(self, req):
-        for ch in self._get_channels():
+        ch_mgr = IRCChannelManager(self.env)
+        for ch in ch_mgr.get_channel_names():
             yield 'irclogs-%s'%(ch)
 
     def get_navigation_items(self, req):
         if req.perm.has_permission('IRCLOGS_VIEW'):
-            for ch in self._get_channels():
-                ops = dict(self.config.options('irclogs'))
-                chan = ops['channel.%s.channel'%(ch)]
-                navbutton = ops.get('channel.%s.navbutton'%(ch), chan)
-                l = html.a(navbutton, href=req.href.irclogs(ch))
-                yield 'mainnav', 'irclogs-%s'%(ch), l
+            ch_mgr = IRCChannelManager(self.env)
+            for channel_name in ch_mgr.get_channel_names():
+                channel = ch_mgr.get_channel_by_name(channel_name)
+                href = req.href.irclogs(channel['name'])
+                if not channel['name']:
+                    href = req.href.irclogs()
+                l = html.a(channel['navbutton'], href=href)
+                yield 'mainnav', channel['menuid'], l 
 
     # IPermissionHandler methods
     def get_permission_actions(self):
@@ -81,29 +82,6 @@ class IrcLogsView(Component):
         req.args.update(m.groupdict())
         return True
 
-    def _get_channels(self):
-        CHANNEL_RE = re.compile('^channel\.(?P<name>[^.]+)\..*$')
-        def _name(x):
-            m = CHANNEL_RE.match(x)
-            if m:
-                return m.groupdict()['name']
-            else:
-                None
-        ops = self.config.options('irclogs')
-        # set makes uniq
-        return filter(None, set(map(_name, map(lambda x: x[0], ops))))
-
-    def get_provider(self, channel):
-        # TODO: generalize
-        name = self.config.get('irclogs', 'channel.%s.provider'%(channel))
-        if not name:
-            name = self.config.get('irclogs', 'provider', 'file')
-        for p in self.providers:
-            if name == p.get_name():
-                return p
-        raise Exception(
-                "%s IRCLogsProvider for channel %s not found."%(name, channel))
-            
     def _map_lines(self, l):
         if l.get('nick'):
             l['nick'] = to_unicode(l['nick'], self.charset)
@@ -138,9 +116,11 @@ class IrcLogsView(Component):
         context['firstMonth'] = 8
         context['firstYear'] = 1977
         context['nojscal'] = generate_nojs_calendar(req, context, entries)
+        ch_mgr = IRCChannelManager(self.env)
 
         # TODO: do this for each channel, instead of hardcode
-        provider = self.get_provider(context['channel'])
+        channel = ch_mgr.get_channel_by_name(context['channel'])
+        provider = ch_mgr.get_provider(channel)
         start = datetime(context['year'], context['month'], context['day'], 
                 0, 0, 0, tzinfo=req.tz)
         end = datetime(context['year'], context['month'], context['day']+1, 

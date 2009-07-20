@@ -3,8 +3,6 @@ from trac.core import *
 from trac.search import ISearchSource
 from trac.config import Option
 
-from irclogs import util
-
 try:
     from pyndexter import Framework, READWRITE
     from pyndexter.util import quote

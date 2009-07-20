@@ -32,8 +32,7 @@ import heapq
 from trac.core import *
 from trac.config import Option, ListOption
 
-from irclogs.api import IIRCLogsProvider
-from irclogs import util
+from irclogs.api import *
 
 # this is used for comparison only, and never included in yielded
 # values
@@ -46,7 +45,7 @@ class FileIRCLogProvider(Component):
     [irclogs]
     format = gozer
     # or 
-    channel.#test.format = gozer
+    channel.test.format = gozer
     """
 
     implements(IIRCLogsProvider)
@@ -55,18 +54,6 @@ class FileIRCLogProvider(Component):
     # a named format.
     format = Option('irclogs', 'format', 'supy', 
             doc="The name of the default format to use.")
-
-    network = Option('irclogs', 'network', 
-            doc="""Default network.
-            This is only used as a replacement var in the path option.
-            """)
-
-    timezone = Option('irclogs', 'timezone', 'utc',
-        doc="""Default timezone that the files are logged in.  This is needed
-        so we can convert the incoming date to the date in the irc
-        log file names.  And find all files in the range. This can be 
-        overridden by the format.
-        """)
 
     basepath = Option('irclogs', 'basepath', '/var/lib/irclogs',
         doc="""Default basepath for logs.  Can be overridden by format.""")
@@ -243,10 +230,11 @@ class FileIRCLogProvider(Component):
                 if len(files) > 0:
                     files = [file(f) for f in files]
                     parsers = list(
-                            [self.parse_lines(f, format=channel['format'], tz=tz, target_tz=ttz) for f in files])
+                            [self.parse_lines(f, format=channel['format'], \
+                                    tz=tz, target_tz=ttz) for f in files])
                     def _key(x):
                         return x.get('timestamp', OLDDATE)
-                    for l in util.merge_iseq(parsers, _key): 
+                    for l in merge_iseq(parsers, _key): 
                         yield l
                     [f.close() for f in files]
 
@@ -311,34 +299,14 @@ class FileIRCLogProvider(Component):
             yield filepaths
 
     def channel(self, name):
-        """Get channel data by name.
-        
-        ex.
-        {
-          'channel': '#mychannel',
-          'format': {
-            'basepath': '/var/logs/irclogs',
-            'paths': ['%(network)s/%(channel)s-%Y%m%d.log', '%(network)s/%(channel)s-%Y%m%d.slog'],
-            'match_order': ('message', 'action', 'topic'),
-            'timestamp_regex': '^(?P<timestamp>blahblah)',
-            'message_regex': '^%(timestamp_regex) (?P<message>blahblah)$',
-            'action_regex': '^%(timestamp_regex) * (?P<message>blahblah)',
-            etc...
-          },
-          'network': 'Freenode'
-        }
-
-        Network is usually none, but could be used with an irclogger that logs
-        on to multi-networks.  It is only used as a positional parameter in 
-        format.paths.
+        """ 
+        Gets channel by name and replaces format string with format 
+        data.
         """
-        default = {'format': self.format, 'network': self.network}
-
-        # we only want options for this channel
-        options = util.get_prefix_options('channel.%s'%(name), self.config)
-        default.update(options)
-        default['format'] = self.format(default['format'])
-        return default
+        ch_mgr = IRCChannelManager(self.env)
+        ch = ch_mgr.get_channel_by_name(name)
+        ch['format'] = self.format(ch['format'])
+        return ch
 
     def default_format(self):
         """All default format options.  A potential bug is if the default
@@ -351,7 +319,7 @@ class FileIRCLogProvider(Component):
                 'match_order': self.match_order,
                 'timestamp_format': self.timestamp_format,
                 'timestamp_regex': self.timestamp_regex,
-                'timezone': self.timezone,
+                'timezone': self.config.get('irclogs', 'timezone'),
         }
         # grab the match order, and then all the assoc. regexs
         match_order = re.split('[,|: ]+', format['match_order'])
@@ -375,8 +343,8 @@ class FileIRCLogProvider(Component):
         format.gozer.timestamp_regex = 'otherblah'
 
         This method will return all options for a named format."""
-        format_options = util.get_prefix_options(
-                'format.%s'%(name), self.config)
+        format_options = prefix_options(
+                'format.%s'%(name), self.config.options('irclogs'))
         ret_format = self.default_format()
         ret_format.update(format_options)
         return ret_format

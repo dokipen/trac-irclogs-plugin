@@ -7,7 +7,6 @@ from trac.core import *
 from trac.test import EnvironmentStub
 
 from irclogs.provider.file import *
-from irclogs import util
 
 class FileIRCLogProviderTestCase(unittest.TestCase):
     def setUp(self):

@@ -15,8 +15,7 @@ from trac.core import *
 from trac.config import Option
 from trac.db.api import DatabaseManager
 
-from irclogs.api import IIRCLogsProvider
-from irclogs import util
+from irclogs.api import IIRCLogsProvider, IRCChannelManager
 
 class DBIRCLogProvider(Component):
     """
@@ -32,7 +31,8 @@ class DBIRCLogProvider(Component):
 
     # IRCLogsProvider interface
     def get_events_in_range(self, channel_name, start, end):
-        ch = util.get_channel_by_name(self.config, channel_name)
+        ch_mgr = IRCChannelManager(self.env)
+        ch = ch_mgr.get_channel_by_name(channel_name)
         cnx = self._getdb(ch)
         try:
             cur = cnx.cursor()

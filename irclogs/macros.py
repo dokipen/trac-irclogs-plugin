@@ -8,8 +8,8 @@ from trac.web.chrome import add_stylesheet, add_script, Chrome
 from trac.wiki.macros import WikiMacroBase
 from trac.wiki.formatter import system_message
 from trac.wiki.api import parse_args
-from web_ui import IrcLogsView
-from irclogs import util
+from irclogs.web_ui import IrcLogsView
+from irclogs.api import IRCChannelManager
 
 class IrcLogLiveMacro(WikiMacroBase):
     """Displays a live in-page feed of the current IRC log.  
@@ -53,9 +53,9 @@ class IrcLogQuoteMacro(WikiMacroBase):
     
     def expand_macro(self, formatter, name, content):
         args, kw = parse_args(content)
-        channel = args and args[0].strip()
+        channel_name = args and args[0].strip()
         utc_dt = args and args[1].strip()
-        if not (utc_dt and channel):
+        if not (utc_dt and channel_name):
             return system_message('IrcLogQuote: arguments required (channel,'\
                     ' timestamp(UTCYYYY-MM-DDTHH:MM:SS), seconds)')
         d = self.date_re.match(utc_dt.strip())
@@ -64,18 +64,20 @@ class IrcLogQuoteMacro(WikiMacroBase):
         offset = int(args and len(args)>2 and args[2] or 10)
 
         irclogs = IrcLogsView(self.env)        
+        ch_mgr = IRCChannelManager(self.env)
         start = datetime(*strptime(utc_dt, self.date_format)[:6], 
                 tzinfo=timezone('utc'))
         end = start + timedelta(seconds=offset)
-        provider = irclogs.get_provider(channel)
-        lines = provider.get_events_in_range(channel, start, end)
+        channel = ch_mgr.get_channel_by_name(channel_name)
+        provider = ch_mgr.get_provider(channel)
+        lines = provider.get_events_in_range(channel_name, start, end)
         lines = filter(irclogs._hide_nicks, map(irclogs._map_lines, lines))
 
         add_stylesheet(formatter.req, 'irclogs/css/irclogs.css')
         data = Chrome(self.env).populate_data(
             formatter.req, 
             {
-                'channel': channel,
+                'channel': channel_name,
                 'lines': lines,
                 'year': '%04d'%(start.year),
                 'month': '%02d'%(start.month),
