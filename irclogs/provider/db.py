@@ -66,6 +66,10 @@ class DBIRCLogProvider(Component):
                 timestamp = l[1]
                 timestamp = timestamp.replace(tzinfo=tz)
                 dt = ttz.normalize(timestamp.astimezone(ttz))
+                if ch.get('charset'):
+                    for i in range(2, len(l)):
+                        l[i] = unicode(l[i], ch['charset'])
+
                 yield {
                     'timestamp': dt,
                     'network': l[2],

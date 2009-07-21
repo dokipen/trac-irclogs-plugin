@@ -112,6 +112,9 @@ class IRCChannelManager(Component):
         log.  This can be overridden by the file format.
         """)
 
+    charset = Option('irclogs', 'charset', 'utf-8',
+        doc="""Default charset that logs are retrieved in.""")
+
     def get_channel_names(self):
         """
         Yield all channel names.  None means that there is a default 
