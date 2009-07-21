@@ -35,7 +35,6 @@ class DBIRCLogProvider(Component):
         ch = ch_mgr.get_channel_by_name(channel_name)
         def_tzname = self.config.get('irclogs', 'timezone', 'utc')
         tzname = ch.get('timezone', def_tzname)
-        self.log.error(tzname)
         try:
             tz = timezone(tzname)
         except UnknownTimeZoneError:
@@ -50,7 +49,6 @@ class DBIRCLogProvider(Component):
             self.log.warn("timezone %s not supported, irclog output will be "\
                     "%s"%(start.tzname(), tzname))
             ttz = tz
-        self.log.error(ttz)
 
         try:
             cur = cnx.cursor()

@@ -1,6 +1,7 @@
 import heapq
 import itertools
 import re
+from pytz import UnknownTimeZoneError, timezone
 
 from trac.core import *
 from trac.config import Option
@@ -195,3 +196,13 @@ class IRCChannelManager(Component):
             raise Exception('multiple channels match %s'%(channel))
         m = channel_re.match(vals[0][0])
         return get_channel_by_name(m.group('channel'))
+
+    def to_user_tz(self, req, datetime):
+        try:
+            utz = timezone(req.tz.tzname(req.tz))
+        except UnknownTimeZoneError:
+            self.log.warn("input timezone %s not supported, irclogs will be "\
+                    "parsed as UTC")
+            tzname = 'UTC'
+            utz = timezone(tzname)
+        return utz.normalize(datetime.astimezone(utz))

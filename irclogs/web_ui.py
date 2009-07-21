@@ -7,7 +7,7 @@ import time
 
 from time import strptime
 from trac.util.datefmt import localtz
-from datetime import datetime
+from datetime import datetime, timedelta
 from calendar import month_name
 
 from trac.core import *
@@ -121,10 +121,15 @@ class IrcLogsView(Component):
         # TODO: do this for each channel, instead of hardcode
         channel = ch_mgr.get_channel_by_name(context['channel'])
         provider = ch_mgr.get_provider(channel)
+        oneday = timedelta(days=1)
         start = datetime(context['year'], context['month'], context['day'], 
                 0, 0, 0, tzinfo=req.tz)
-        end = datetime(context['year'], context['month'], context['day']+1, 
-                0, 0, 0, tzinfo=req.tz)
+        # cheezy hack to give us enough lines as long as the channel is 
+        # somewhat active.  Without this we get a shortage of feed lines
+        # at day break.
+        end = start + oneday
+        if req.args['feed']:
+            start = start - oneday
         lines = provider.get_events_in_range(context['channel'], start, end)
 
         context['viewmode'] = 'day'
@@ -137,7 +142,7 @@ class IrcLogsView(Component):
         )
 
         # handle if display type is html or an external feed
-        if req.args['feed'] is not None:
+        if req.args['feed']:
             if len(context['lines']) > 0:
                 # TODO: we should go to an older date rather then just 
                 # get latest lines when number requested exceeds

@@ -65,6 +65,7 @@ class IrcLogQuoteMacro(WikiMacroBase):
         ch_mgr = IRCChannelManager(self.env)
         start = datetime(*strptime(utc_dt, self.date_format)[:6])
         start = start.replace(tzinfo=timezone('utc'))
+        start = ch_mgr.to_user_tz(formatter.req, start)
         end = start + timedelta(seconds=offset)
         channel = ch_mgr.get_channel_by_name(channel_name)
         provider = ch_mgr.get_provider(channel)
