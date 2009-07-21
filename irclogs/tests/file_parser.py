@@ -385,16 +385,15 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         ch = self.out.channel('test')
         self.assert_(ch)
         self.assertEquals('#test', ch['channel'])
-        df = ch['format']
-        self.assertEquals('/var/lib/irclogs', df['basepath'])
-        self.assertEquals(['%(channel)s/%(channel)s.%Y-%m-%d.log'], df['paths'])
-        self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
-        self.assertEquals('utc', df['timezone'])
-        self.assert_(df['timestamp_regex'])
-        self.assert_(df['match_order'])
-        for m in re.split('[ |:,]+', df['match_order']):
-            self.assert_(df['%s_regex'%(m)])
-            re.compile(df['%s_regex'%(m)])
+        self.assertEquals('/var/lib/irclogs', ch['basepath'])
+        self.assertEquals(['%(channel)s/%(channel)s.%Y-%m-%d.log'], ch['paths'])
+        self.assertEquals('%Y-%m-%dT%H:%M:%S', ch['timestamp_format'])
+        self.assertEquals('utc', ch['timezone'])
+        self.assert_(ch['timestamp_regex'])
+        self.assert_(ch['match_order'])
+        for m in re.split('[ |:,]+', ch['match_order']):
+            self.assert_(ch['%s_regex'%(m)])
+            re.compile(ch['%s_regex'%(m)])
 
     def test_channel_funny_name(self):
         self.out.config.set('irclogs', 'channel.mingya.channel', '#test')

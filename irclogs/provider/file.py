@@ -230,8 +230,8 @@ class FileIRCLogProvider(Component):
                 if len(files) > 0:
                     files = [file(f) for f in files]
                     parsers = list(
-                            [self.parse_lines(f, format=channel['format'], \
-                                    tz=tz, target_tz=ttz) for f in files])
+                        [self.parse_lines(f, format=channel, \
+                            target_tz=ttz) for f in files])
                     def _key(x):
                         return x.get('timestamp', OLDDATE)
                     for l in merge_iseq(parsers, _key): 
@@ -304,8 +304,13 @@ class FileIRCLogProvider(Component):
         data.
         """
         ch_mgr = IRCChannelManager(self.env)
+        # kind of goofy, but we want to use 
+        # format for the default values and 
+        # we don't know the format until we
+        # get the channel.
         ch = ch_mgr.get_channel_by_name(name)
-        ch['format'] = self.format(ch['format'])
+        format = self.format(ch['format'])
+        ch = ch_mgr.get_channel_by_name(name, format)
         return ch
 
     def default_format(self):
@@ -349,7 +354,7 @@ class FileIRCLogProvider(Component):
         ret_format.update(format_options)
         return ret_format
 
-    def parse_lines(self, lines, format=None, tz=None, target_tz=None):
+    def parse_lines(self, lines, format=None, target_tz=None):
         """Parse irc log lines into structured data.  format should
         contain all information about parsing the lines.
           * lines: all irc lines, any generator or list will do
@@ -363,16 +368,18 @@ class FileIRCLogProvider(Component):
                                   %(timestamp_regex)s and is seperate as a 
                                   convenience.
 
-          * tz: optional timezone of logfile timestamps.  Will use 
-                self.timezone if None.
           * target_tz: optional target timezone.  This is the timezone of the 
                 return data timedate objects.  Will not convert to target_tz 
                 if None.
         """
         if not format: 
             format = self.default_format()
-        if not tz:
+        try:
             tz = timezone(format['timezone'])
+        except UnknownTimeZoneError:
+            self.log.warn("input timezone %s not supported, irclogs will be "\
+                "parsed as UTC")
+            tz = timezone('utc')
 
         def _map(x):
             regex_string = format['%s_regex'%(x)]

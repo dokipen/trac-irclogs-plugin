@@ -148,7 +148,7 @@ class IRCChannelManager(Component):
         raise Exception(
                 "%s IRCLogsProvider for channel %s not found."%(name, channel))
 
-    def get_channel_by_name(self, name):
+    def get_channel_by_name(self, name, defaults=None):
         """
         Get channel data by name.
         
@@ -172,6 +172,8 @@ class IRCChannelManager(Component):
             'provider': c.get('irclogs', 'provider'),
             'name': name,
         }
+        if defaults:
+            retoptions.update(defaults)
         if name:
             options= prefix_options('channel.%s.'%(name), c.options('irclogs'))
             if not options:
@@ -185,20 +187,20 @@ class IRCChannelManager(Component):
             retoptions['menuid'] = 'irclogs'
         return retoptions
 
-    def get_channel_by_channel(self, channel):
+    def get_channel_by_channel(self, channel, defaults=None):
         c = self.config
         ops = c.options('irclogs')
         vals = filter(lambda x: (self.channel_re.match(x[0]) \
                 and x[1] == channel), ops)
         if not vals:
             if c.get('irclogs', 'channel') == channel:
-                return self.get_channel_by_name(None)
+                return self.get_channel_by_name(None, defaults)
             raise Exception('channel %s not found'%(channel))
-        default_channel = self.get_channel_by_name(None)
+        default_channel = self.get_channel_by_name(None, defaults)
         if len(vals) > 1 or vals[0][1] == default_channel['channel']:
             raise Exception('multiple channels match %s'%(channel))
         m = self.channel_re.match(vals[0][0])
-        return self.get_channel_by_name(m.group('channel'))
+        return self.get_channel_by_name(m.group('channel'), defaults)
 
     def to_user_tz(self, req, datetime):
         try:
