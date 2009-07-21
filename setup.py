@@ -11,6 +11,7 @@ setup(
     author_email='armin.ronacher@active-4.com',
     url='http://trac.pocoo.org/',
     license='BSD',
+    test_suite= 'irclogs.tests.suite',
     packages=['irclogs'],
     classifiers=[
         'Framework :: Trac',
