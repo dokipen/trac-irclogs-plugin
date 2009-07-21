@@ -24,12 +24,12 @@ class IIRCLogsProvider(Interface):
           type is (comment|action|join|part|quit|kick|mode|topic|nick|server|other).
           addtional parameters with their associated types:
             * nick : comment,action,join,part,quit,kick,mode,topic,nick
-            * comment : comment
+            * comment : comment, notice
             * action : action
             * kicked : kick
-
-
-
+            * mode: mode
+            * topic: topic
+            * newnick: nick
         """
 
     def get_name(self):
