@@ -185,17 +185,17 @@ class IRCChannelManager(Component):
     def get_channel_by_channel(self, channel):
         c = self.config
         ops = c.options('irclogs')
-        vals = filter(lambda x: (channel_re.match(x[0]) \
+        vals = filter(lambda x: (self.channel_re.match(x[0]) \
                 and x[1] == channel), ops)
         if not vals:
             if c.get('irclogs', 'channel') == channel:
-                return get_channel_by_name(None)
+                return self.get_channel_by_name(None)
             raise Exception('channel %s not found'%(channel))
-        default_channel = get_channel_by_name(None)
+        default_channel = self.get_channel_by_name(None)
         if len(vals) > 1 or vals[0][1] == default_channel['channel']:
             raise Exception('multiple channels match %s'%(channel))
-        m = channel_re.match(vals[0][0])
-        return get_channel_by_name(m.group('channel'))
+        m = self.channel_re.match(vals[0][0])
+        return self.get_channel_by_name(m.group('channel'))
 
     def to_user_tz(self, req, datetime):
         try:
