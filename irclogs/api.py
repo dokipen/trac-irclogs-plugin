@@ -166,12 +166,9 @@ class IRCChannelManager(Component):
         format.paths or the networks column for db backend.
         """
         c = self.config
-        retoptions = {
-            'channel': c.get('irclogs', 'channel'),
-            'network': c.get('irclogs', 'network'),
-            'provider': c.get('irclogs', 'provider'),
-            'name': name,
-        }
+        default_op = lambda x: re.match('^[^.]+$', x[0])
+        retoptions = dict(filter(default_op, c.options('irclogs')))
+        retoptions['name'] = name
         if defaults:
             retoptions.update(defaults)
         if name:

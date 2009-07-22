@@ -203,7 +203,7 @@ class FileIRCLogProvider(Component):
         in the users tz.  If the start and end times have different timezones,
         you're fucked."""
         channel = self.channel(channel_name)
-        tzname = channel['format'].get('timezone', 'utc')
+        tzname = channel.get('timezone', 'utc')
         try:
             tz = timezone(tzname)
         except UnknownTimeZoneError:
@@ -283,10 +283,13 @@ class FileIRCLogProvider(Component):
         > [file-1.3-a.log, file-1.3-b.log]
         > [file-1.4-a.log, file-1.4-b.log]
         """
-        basepath = channel['format']['basepath']
+        basepath = channel['basepath']
         for date in dates:
             filepaths = []
-            for path in channel['format']['paths']:
+            paths = channel['paths']
+            if not isinstance(paths, list):
+                paths = list((paths,))
+            for path in paths:
                 fileformat = os.path.join(basepath, path)
                 fileformat = date.strftime(fileformat)
                 fileformat = fileformat%({
@@ -309,50 +312,10 @@ class FileIRCLogProvider(Component):
         # we don't know the format until we
         # get the channel.
         ch = ch_mgr.get_channel_by_name(name)
-        format = self.format(ch['format'])
+        format = prefix_options('format.%s'%ch['format'], 
+                self.config.options('irclogs'))
         ch = ch_mgr.get_channel_by_name(name, format)
         return ch
-
-    def default_format(self):
-        """All default format options.  A potential bug is if the default
-        format match_order doesn't include a $name_regex, but a custom 
-        format does, and the $name_regex is specified in the defaults.  In 
-        this case it would never be read."""
-        format = {
-                'basepath': self.basepath,
-                'paths': self.paths,
-                'match_order': self.match_order,
-                'timestamp_format': self.timestamp_format,
-                'timestamp_regex': self.timestamp_regex,
-                'timezone': self.config.get('irclogs', 'timezone'),
-        }
-        # grab the match order, and then all the assoc. regexs
-        match_order = re.split('[,|: ]+', format['match_order'])
-        for mtype in match_order:
-            regex_name = "%s_regex"%(mtype) 
-            format[regex_name] = self.__getattribute__(regex_name)
-        return format
-
-    def format(self, name):
-        """Named formats override default options.  Default options are 
-        declared in the config file on the first level.
-
-        [irclogs]
-        basepath = /var/irclogs/
-        timestamp_regex = 'blah'
-
-        format options are prefixed with 'format.$name.'.
-
-        [irclogs]
-        format.gozer.basepath = /home/gozerbot/.gozerbot/logs/trac/
-        format.gozer.timestamp_regex = 'otherblah'
-
-        This method will return all options for a named format."""
-        format_options = prefix_options(
-                'format.%s'%(name), self.config.options('irclogs'))
-        ret_format = self.default_format()
-        ret_format.update(format_options)
-        return ret_format
 
     def parse_lines(self, lines, format=None, target_tz=None):
         """Parse irc log lines into structured data.  format should
