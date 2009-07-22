@@ -198,7 +198,7 @@ class FileIRCLogProvider(Component):
     Option('irclogs', 'format.gozer.timestamp_format', '%Y-%m-%d %H:%M:%S')
 
     # bip format
-    ListOption('irclogs', 'format.bip.paths', '%(network)s/%Y-%m/%(channel)s-%d.log')
+    ListOption('irclogs', 'format.bip.paths', '%(network)s/%Y-%m/%(channel)s.%d.log')
     Option('irclogs', 'format.bip.timestamp_format', '%d-%m-%Y %H:%M:%S')
     Option('irclogs', 'format.bip.timestamp_regex', '(?P<timestamp>\d{2}-\d{2}-\d{4}.\d{2}:\d{2}:\d{2})')
     Option('irclogs', 'format.bip.comment_regex', '^%(timestamp_regex)s\s(?P<message>[<>]\s(?P<nick>[^!]+)![^:]*:\s(?P<comment>.*))$')
