@@ -10,7 +10,7 @@
         </div>
       </py:when>
       <py:otherwise>
-        <table class="irclog ${extra_classes}" py:if="not missing">
+        <table id="irclog-table" class="irclog ${extra_classes}" py:if="not missing">
           <tr py:for="line in lines" class="${line['type']} ${line['hidden']}" >
             <py:choose test="line['type']">
               <py:when test="'comment'">

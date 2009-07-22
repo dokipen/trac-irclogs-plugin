@@ -99,16 +99,16 @@
         $('#date-pick-trigger').click(function() {
           $('.cal-wrap').toggle('blind');
         });
-        $('#showactions').click(function(e) {
+        function updateIrclogs() {
           if ($('#showactions').checked()) {
-            $$('.irclog tr').show();
+            $('#comments-style').attr('disabled', true);
           } else {
-            $$('.irclog tr').hide();
-            $$('.comment').show();
+            $('#comments-style').attr('disabled', false);
           }
-        });
-        $$('.irclog tr').hide();
-        $$('.comment').show();
+        }
+        updateIrclogs();
+        $('<style id="comments-style" disabled="disabled"/>').text('#irclog-table tr { display: none } #irclog-table tr.comment {display:table-row}').appendTo('head');
+        $('#showactions').click(updateIrclogs);
         $('#irclog-controls').show();
         $('#nojscal').hide();
       });
