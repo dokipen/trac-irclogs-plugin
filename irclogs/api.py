@@ -200,8 +200,10 @@ class IRCChannelManager(Component):
         return self.get_channel_by_name(m.group('channel'), defaults)
 
     def to_user_tz(self, req, datetime):
+        deftz = self.config.get('trac', 'default_timezone', 'UTC')
+        usertz = req.session.get('tz', deftz)
         try:
-            utz = timezone(req.tz.tzname(req.tz))
+            utz = timezone(usertz)
         except UnknownTimeZoneError:
             self.log.warn("input timezone %s not supported, irclogs will be "\
                     "parsed as UTC")
