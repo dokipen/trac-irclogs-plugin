@@ -12,7 +12,7 @@ setup(
     url='http://trac.pocoo.org/',
     license='BSD',
     test_suite= 'irclogs.tests.suite',
-    packages=['irclogs'],
+    packages=['irclogs', 'irclogs.provider'],
     classifiers=[
         'Framework :: Trac',
         'License :: OSI Approved :: BSD License',
@@ -22,7 +22,10 @@ setup(
                      'htdocs/js/*.js', 'htdocs/images/*.png']
     },
     entry_points = {
-        'trac.plugins': ['irclogs = irclogs'],
+        'trac.plugins': [
+            'irclogs = irclogs',
+            'irclogs.provider = irclogs.provider',
+        ],
         'console_scripts': ['update-irc-search = irclogs.console:update_irc_search',],
     },
     install_requires = ['pytz>=2005m'],
