@@ -380,7 +380,8 @@ class FileIRCLogProvider(Component):
         for line in lines:
             line = line.rstrip('\r\n')
             if format.get('charset'):
-                line = unicode(line, format['charset'])
+                # we must ignore errors because irc is nuts
+                line = unicode(line, format['charset'], errors='ignore')
             if not line:
                 continue
             matched = False

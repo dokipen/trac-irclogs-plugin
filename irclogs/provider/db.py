@@ -68,7 +68,7 @@ class DBIRCLogProvider(Component):
                 dt = ttz.normalize(timestamp.astimezone(ttz))
                 if ch.get('charset'):
                     for i in range(2, len(l)):
-                        l[i] = unicode(l[i], ch['charset'])
+                        l[i] = unicode(l[i], ch['charset'], errors='ignore')
 
                 yield {
                     'timestamp': dt,

@@ -17,7 +17,6 @@ from trac.web.chrome import INavigationContributor, ITemplateProvider, \
                             add_stylesheet, add_script
 from trac.web.main import IRequestHandler
 from trac.util.html import escape, html, Markup
-from trac.util.text import to_unicode
 from trac.util.datefmt import utc
 
 from genshi.builder import tag
@@ -83,14 +82,10 @@ class IrcLogsView(Component):
         return True
 
     def _map_lines(self, l):
-        if l.get('nick'):
-            l['nick'] = to_unicode(l['nick'], self.charset)
         if l.get('nick') in self.hidden_users:
             l.update({'hidden': True})
         if l['type'] == 'comment':
             l['nickcls'] = 'nick-%d' % (sum(ord(c) for c in l['nick']) % 8)
-        if l['message']:
-            l['message'] = to_unicode(l['message'], self.charset)
         return l
 
     def _hide_nicks(self, l):

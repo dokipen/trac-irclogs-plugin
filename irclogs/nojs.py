@@ -17,7 +17,6 @@ from trac.web.chrome import INavigationContributor, ITemplateProvider, \
                             add_stylesheet, add_script
 from trac.web.main import IRequestHandler
 from trac.util.html import escape, html, Markup
-from trac.util.text import to_unicode
 from trac.util.datefmt import utc
 
 from genshi.builder import tag
