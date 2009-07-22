@@ -191,11 +191,27 @@ class FileIRCLogProvider(Component):
             if a line could match multiple regexes.  Can be overridden by 
             format.""")
 
-    Option('irclogs', 'format.gozer.basepath', '/home/gozerbot/.gozerbot/')
+    # gozer format
     ListOption('irclogs', 'format.gozer.paths', 
             ['logs/%(network)s/simple/%(channel)s.%Y%m%d.slog', 
                 'logs/%(network)s/simple/%(channel_name)s.%Y%m%d.slog'])
     Option('irclogs', 'format.gozer.timestamp_format', '%Y-%m-%d %H:%M:%S')
+
+    # bip format
+    ListOption('irclogs', 'format.bip.paths', '%(network)s/%Y-%m/%(channel)s-%d.log')
+    Option('irclogs', 'format.bip.timestamp_format', '%d-%m-%Y %H:%M:%S')
+    Option('irclogs', 'format.bip.timestamp_regex', '(?P<timestamp>\d{2}-\d{2}-\d{4}.\d{2}:\d{2}:\d{2})')
+    Option('irclogs', 'format.bip.comment_regex', '^%(timestamp_regex)s\s(?P<message>[<>]\s(?P<nick>[^!]+)![^:]*:\s(?P<comment>.*))$')
+    Option('irclogs', 'format.bip.join_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<nick>[^!]+)![^\s]*\shas\sjoined\s.*)$')
+    Option('irclogs', 'format.bip.part_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<nick>[^!]+)![^\s]*\shas\sleft\s.*)$')
+    Option('irclogs', 'format.bip.quit_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<nick>[^!]+)![^\s]*\shas\squit\s\["?(?P<quitmsg>.*)"?\].*)$')
+    Option('irclogs', 'format.bip.nick_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<nick>[^\s]+)\sis\snow\sknown\sas\s(?P<newnick>.*))$')
+    Option('irclogs', 'format.bip.topic_regex',   '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<nick>[^!]+)![^\s]+\schanged\stopic\sof\s[^\s]+\sto:\s(?P<topic>.*))$')
+    Option('irclogs', 'format.bip.mode_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\smode/[^\s]+\s\[(?P<mode>[^\]]+)\]\sby\s(?P<nick>[^!]+)!.*)$')
+    Option('irclogs', 'format.bip.kick_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<kicked>[^\s]+)\shas\sbeen\skicked\sby\s(?P<nick>[^!]+)![^\s]+\s\[(?P<kickmsg>[^\]]+)\])$')
+        #'(?P<message>\*\s(?P<nick>[^ ]+)\s(?P<action>.*))$',
+    Option('irclogs', 'format.bip.action_regex',  '^%(timestamp_regex)s\s(?P<message>[<>]\s*\s(?P<nick>[^!]+)![^\s]+\s(?P<action>.*))$')
+    Option('irclogs', 'format.bip.notice_regex',  '%(timestamp_regex)s\s(?P<message>TODO)$')
 
     # IRCLogsProvider interface
     def get_events_in_range(self, channel_name, start, end):
