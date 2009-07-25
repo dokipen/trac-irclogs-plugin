@@ -34,13 +34,13 @@ class IrcLogsView(Component):
 # between the date adn time.  Make sure to comment out the existing
 # _line_re.
 #    _line_re = re.compile('%s %s \|  (%s)$' % (
-    _line_re = re.compile('%sT%s  (%s)$' % (
-        r'(?P<date>\d{4}-\d{2}-\d{2})',
+    _line_re = re.compile('%s\s%s\s(%s)$' % (
+        r'(?P<date>\d{2}-\d{2}-\d{4})',
         r'(?P<time>\d{2}:\d{2}:\d{2})',
         '|'.join([
-            r'(<(?P<c_nickname>.*?)> (?P<c_text>.*?))',
-            r'(\* (?P<a_nickname>.*?) (?P<a_text>.*?))',
-            r'(\*\*\* (?P<s_nickname>.*?) (?P<s_text>.*?))'
+            r'[<>]\s((?P<c_nickname>[^!]+)[^:]*:\s(?P<c_text>.*?))',
+            r'[<>]\s(\*\s(?P<a_nickname>[^\s]+?)\s(?P<a_text>.*?))',
+            r'(-!-\s(?P<s_nickname>[^\s]+?)\s(?P<s_text>.*?))'
         ]))
     )
     charset = Option('irclogs', 'charset', 'utf-8',
@@ -118,6 +118,8 @@ class IrcLogsView(Component):
     def _render_lines(self, iterable, tz=None):
         dummy = lambda: {}
         result = []
+        from time import time as realtime
+        start = realtime()
         for line in iterable:
             d = getattr(self._line_re.search(line), 'groupdict', dummy)()
             for mode in ('channel', 'action', 'server'):
@@ -139,9 +141,9 @@ class IrcLogsView(Component):
                 server_dt = self._get_tz_datetime(d['date'], d['time'])
                 local_dt = tz.normalize(server_dt.astimezone(tz))
                 local_time = local_dt.strftime("%H:%M:%S")
-                local_date = local_dt.strftime("%Y-%m-%d")
+                local_date = local_dt.strftime("%d-%m-%Y")
                 utc_dt = utc.normalize(server_dt.astimezone(utc)). \
-                    strftime("UTC%Y-%m-%dT%H:%M:%S")
+                    strftime("UTC%d-%m-%Y %H:%M:%S")
             else:
                 local_date = d['date']
                 local_time = d['time']
@@ -157,6 +159,7 @@ class IrcLogsView(Component):
                 'nickname':     nick,
                 'nickcls':      'nick-%d' % (sum(ord(c) for c in nick) % 8),
             })
+        self.log.error('parsing took %.02f seconds'%(realtime()-start))
         return result
 
     def _generate_calendar(self, req, entries):
@@ -245,8 +248,8 @@ class IrcLogsView(Component):
         }
 
     def _get_tz_datetime(self, date, time):
-        return datetime(*strptime(date + "T" +  time, 
-                                  "%Y-%m-%dT%H:%M:%S")[0:6]). \
+        return datetime(*strptime(date + " " +  time, 
+                                  "%d-%m-%Y %H:%M:%S")[0:6]). \
                                   replace(tzinfo=localtz)
 
     def process_request(self, req):
