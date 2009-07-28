@@ -3,7 +3,7 @@
      xmlns:py="http://genshi.edgewall.org/" py:strip="">
 
   <py:def function="irclog_table(lines, extra_classes='', page_href='', missing=False)">
-    <table id="irclog-table" class="irclog ${extra_classes}" py:if="not missing">
+    <table id="irclog-table"> 
       <tr py:for="line in lines" class="${line['type']} ${line['hidden']}" >
         <py:choose test="line['type']">
           <py:when test="'comment'">
@@ -12,7 +12,7 @@
             <td class="right">${line['type'] != 'comment' and line.get('nick') + ' ' or '' }${line['comment']}</td>
           </py:when>
           <py:when test="'other'">
-            <td class="time">[xxxxxxxxxxxx]</td>
+            <td class="time"></td>
             <td></td><td><span class="${line['type']}">${line['message']}</span></td>
           </py:when>
           <py:otherwise>

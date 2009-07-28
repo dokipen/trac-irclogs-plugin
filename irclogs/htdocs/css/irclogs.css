@@ -2,19 +2,19 @@ div.irclogs div.wrapper {
     padding: 1em;
 }
 
-div.irclogs table.irclog {
+div.irclogs #irclog-table {
     border-collapse: collapse;
     border: 2px solid #ccc;
     margin-top: 1em;
     width: 100%;
 }
 
-div.irclogs table.irclog td {
+div.irclogs #irclog-table td {
     padding: 0.3em;
     border: 1px dotted #bbb;
 }
 
-div.irclogs table.irclog td.time {
+div.irclogs #irclog-table td.time {
     text-align: left;
     font-family: monospace;
     color: #aaa;
@@ -23,19 +23,19 @@ div.irclogs table.irclog td.time {
     vertical-align: topM
 }
 
-div.irclogs table.irclog td.time a {
+div.irclogs #irclog-table td.time a {
     color: #aaa;
     text-decoration: none;
 }
 
-div.irclogs table.irclog td.left {
+div.irclogs #irclog-table td.left {
     text-align: right;
     font-family: monospace;
     width: 4em;
     vertical-align: top;
 }
 
-div.irclogs table.irclog td.right {
+div.irclogs #irclog-table td.right {
     text-align: left;
     font-family: monospace;
     white-space: pre-wrap;
@@ -47,14 +47,14 @@ div.irclogs table.irclog td.right {
     vertical-align: top;
 }
 
-div.irclogs table.irclog tr.action td.left,
-div.irclogs table.irclog tr.action td.right {
+div.irclogs #irclog-table tr.action td.left,
+div.irclogs #irclog-table tr.action td.right {
     color: #0c0;
     font-style: italic;
 }
 
-div.irclogs table.irclog tr.server td.left,
-div.irclogs table.irclog tr.server td.right {
+div.irclogs #irclog-table tr.server td.left,
+div.irclogs #irclog-table tr.server td.right {
     color: #555;
     font-style: italic;
 }
