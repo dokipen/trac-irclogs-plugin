@@ -399,4 +399,5 @@ class FileIRCLogProvider(Component):
                     break
             if not matched:
                 yield {'type': 'other', 'message': line}
+                self.log.warn("didn't parse: %s"%line)
 
