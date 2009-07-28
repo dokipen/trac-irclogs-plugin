@@ -52,12 +52,14 @@
     <br style="clear:both"/>
     <div id="irclog-controls" style="display: none;">
       <input type="checkbox" id="showactions"> Display announcements</input>
-      <div id="jscal"> <!-- style="display: none;"-->
-        <div class="navcal">
+      <div id="jscal">
+        <div class="navcal ui-datepicker-header ui-helper-clearfix ui-corner-all">
+          <a id="prevday-link" class="ui-datepicker-prev ui-corner-all" href="#"><span class="ui-icon ui-icon-circle-triangle-w">&lt;</span></a>
           <a id="date-pick-trigger" href="#">
             <img src="${calendar}"/>
             Select Date
           </a>
+          <a id="nextday-link" class="ui-datepicker-next ui-corner-all" href="#"><span class="ui-icon ui-icon-circle-triangle-e">&gt;</span></a>
           <div class="cal-wrap" style="display: none;">
             <div id="date-pick"></div>
           </div>
@@ -109,6 +111,27 @@
         updateIrclogs();
         $('<style id="comments-style" disabled="disabled"/>').text('#irclog-table tr { display: none } #irclog-table tr.comment {display:table-row}').appendTo('head');
         $('#showactions').click(updateIrclogs);
+        $('#prevday-link').click(function() {
+          date = new Date();
+          date.setFullYear(${year}, ${month}-1, ${day}-1);
+          dateTxt = $.datepicker.formatDate("yy/mm/dd", date);
+          window.location.href = '${href('irclogs', channel)}/'+dateTxt;
+        });
+        $('#nextday-link').click(function() {
+          date = new Date();
+          date.setFullYear(${year}, ${month}-1, ${day}+1);
+          dateTxt = $.datepicker.formatDate("yy/mm/dd", date);
+          window.location.href = '${href('irclogs', channel)}/'+dateTxt;
+        });
+
+        today = new Date();
+        // simulate amp because genshi is my enemy
+        if (today.getYear() == date.getYear()) {
+        if (today.getMonth() == date.getMonth()) {
+        if (today.getDate() == date.getDate()) {
+          $('#nextday-link').hide();
+        }}} 
+         
         $('#irclog-controls').show();
         $('#nojscal').hide();
       });

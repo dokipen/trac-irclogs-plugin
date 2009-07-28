@@ -109,17 +109,12 @@ div.irclogs div.navcal {
 	top: -15px;
 }
 
-div.navcal a.previous {
-	margin-right: 20px;
+div.navcal > a {
+    float: left;
+    margin: 4px;
+    border-bottom-width: 0;
 }
 
-div.navcal a.next {
-	margin-left: 20px;
-}
-
-div.navcal a.link-datepicker {
-	margin-right: 4px;
-}
 
 div.irclogs input#showactions {
 	float: left;
