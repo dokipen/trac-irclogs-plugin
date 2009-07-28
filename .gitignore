@@ -1,3 +1,6 @@
 build
 dist
 irclogs.egg-info
+patches-parsing_refactor
+*.pyc
+.stgit-*
