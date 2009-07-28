@@ -369,8 +369,8 @@ class FileIRCLogProvider(Component):
         match_order = re.split('[,|: ]+', format['match_order'])
         matchers = map(_map, match_order)
 
-        def _parse_time(time):
-            t = strptime(time, format['timestamp_format'])
+        def _parse_timestamp(tsstr):
+            t = strptime(tsstr, format['timestamp_format'])
             dt = datetime(*t[:6]).replace(tzinfo=tz)
             if target_tz:
                 dt = target_tz.normalize(dt.astimezone(target_tz))
@@ -391,7 +391,7 @@ class FileIRCLogProvider(Component):
                 if m:
                     result = m.groupdict()
                     if result['timestamp']:
-                        timestamp = _parse_time(result['timestamp'])
+                        timestamp = _parse_timestamp(result['timestamp'])
                         result['timestamp'] = timestamp
                     result['type'] = msgtype
                     yield result
