@@ -115,6 +115,10 @@ div.navcal > a {
     border-bottom-width: 0;
 }
 
+div.navcal a:link { text-decoration: none; }
+div.navcal a:visited { text-decoration: none; }
+div.navcal a:active { text-decoration: none; }
+div.navcal a:hover { text-decoration: none; }
 
 div.irclogs input#showactions {
 	float: left;
