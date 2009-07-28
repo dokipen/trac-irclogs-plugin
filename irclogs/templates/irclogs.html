@@ -103,13 +103,12 @@
         });
         function updateIrclogs() {
           if ($('#showactions').checked()) {
-            $('#comments-style').attr('disabled', true);
+            $('link[title="Brief"]').attr('disabled', true);
           } else {
-            $('#comments-style').attr('disabled', false);
+            $('link[title="Brief"]').attr('disabled', false);
           }
         }
         updateIrclogs();
-        $('<style id="comments-style" disabled="disabled"/>').text('#irclog-table tr { display: none } #irclog-table tr.comment {display:table-row}').appendTo('head');
         $('#showactions').click(updateIrclogs);
         $('#prevday-link').click(function() {
           date = new Date();

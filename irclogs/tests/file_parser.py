@@ -68,6 +68,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         tzo = timezone(tz)
         results = [i for i in self.out.parse_lines(
             self.supylines, 
+            self.out.channel(None),
             target_tz=tzo
         )]
 
@@ -92,7 +93,8 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
 
 
     def test_parse_supybot(self):
-        results = [i for i in self.out.parse_lines(self.supylines)]
+        f = self.out.channel(None)
+        results = [i for i in self.out.parse_lines(self.supylines, f)]
 
         self.assertEquals('comment', results[0]['type'])
         self.assertEquals(self._date("20080503022819"), results[0]['timestamp'])
@@ -167,7 +169,8 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         self.assertEquals('* SOME SPECIAL MESSAGE *', results[12]['message'])
     
     def test_parse_simple_gozerbot(self):
-        f = self.out.format('gozer')
+        self.out.config.set('irclogs', 'channel.test.format', 'gozer')
+        f = self.out.channel('test')
         results = [i for i in self.out.parse_lines(self.simplegozerlines, f)]
 
         self.assertEquals('comment', results[0]['type'])
@@ -244,7 +247,8 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
     
     # gozerbot in supy emulation mode
     def test_parse_supy_gozerbot(self):
-        results = [i for i in self.out.parse_lines(self.supygozerlines)]
+        f = self.out.channel(None)
+        results = [i for i in self.out.parse_lines(self.supygozerlines, f)]
 
         self.assertEquals('comment', results[0]['type'])
         self.assertEquals(self._date("20090703221800"), results[0]['timestamp'])
@@ -319,9 +323,9 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         self.assertEquals('* SOME SPECIAL MESSAGE *', results[12]['message'])
 
     def test_default_format(self):
-        df = self.out.default_format()
+        df = self.out.channel('blah')
         self.assertEquals('/var/lib/irclogs', df['basepath'])
-        self.assertEquals(['%(channel)s/%(channel)s.%Y-%m-%d.log'], df['paths'])
+        self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['paths'])
         self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
         self.assertEquals('utc', df['timezone'])
         self.assert_(df['timestamp_regex'])
@@ -331,9 +335,10 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             re.compile(df['%s_regex'%(m)])
 
     def test_supy_format(self):
-        df = self.out.format('supy')
+        self.out.config.set('irclogs', 'channel.test.format', 'supy')
+        df = self.out.channel('test')
         self.assertEquals('/var/lib/irclogs', df['basepath'])
-        self.assertEquals(['%(channel)s/%(channel)s.%Y-%m-%d.log'], df['paths'])
+        self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['paths'])
         self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
         self.assertEquals('utc', df['timezone'])
         self.assert_(df['timestamp_regex'])
@@ -343,9 +348,9 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             re.compile(df['%s_regex'%(m)])
 
     def test_nonexistant_format(self):
-        df = self.out.format('sdflkjlskjf')
+        df = self.out.channel('sdflkjlskjf')
         self.assertEquals('/var/lib/irclogs', df['basepath'])
-        self.assertEquals(['%(channel)s/%(channel)s.%Y-%m-%d.log'], df['paths'])
+        self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['paths'])
         self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
         self.assertEquals('utc', df['timezone'])
         self.assert_(df['timestamp_regex'])
@@ -355,8 +360,9 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             re.compile(df['%s_regex'%(m)])
 
     def test_gozer_format(self):
-        df = self.out.format('gozer')
-        self.assertEquals('/home/gozerbot/.gozerbot/', df['basepath'])
+        self.out.config.set('irclogs', 'channel.test.format', 'gozer')
+        df = self.out.channel('test')
+        self.assertEquals('/var/lib/irclogs', df['basepath'])
         self.assertEquals(['logs/%(network)s/simple/%(channel)s.%Y%m%d.slog',
             'logs/%(network)s/simple/%(channel_name)s.%Y%m%d.slog'], df['paths'])
         self.assertEquals('%Y-%m-%d %H:%M:%S', df['timestamp_format'])
@@ -368,9 +374,9 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             re.compile(df['%s_regex'%(m)])
 
     def test_none_format(self):
-        df = self.out.format(None)
+        df = self.out.channel(None)
         self.assertEquals('/var/lib/irclogs', df['basepath'])
-        self.assertEquals(['%(channel)s/%(channel)s.%Y-%m-%d.log'], df['paths'])
+        self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['paths'])
         self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
         self.assertEquals('utc', df['timezone'])
         self.assert_(df['timestamp_regex'])
@@ -386,7 +392,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         self.assert_(ch)
         self.assertEquals('#test', ch['channel'])
         self.assertEquals('/var/lib/irclogs', ch['basepath'])
-        self.assertEquals(['%(channel)s/%(channel)s.%Y-%m-%d.log'], ch['paths'])
+        self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', ch['paths'])
         self.assertEquals('%Y-%m-%dT%H:%M:%S', ch['timestamp_format'])
         self.assertEquals('utc', ch['timezone'])
         self.assert_(ch['timestamp_regex'])
@@ -438,10 +444,12 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
 
     def test_merge_iseq(self):
         parsers = []
+        self.out.config.set('irclogs', 'channel.test.format', 'gozer')
+        df = self.out.channel('test')
         for f in (
-                (self.supygozerlines, self.out.format('supy')), 
-                (self.simplegozerlines, self.out.format('gozer')), 
-                (self.supylines, self.out.format('supy'))):
+                (self.supygozerlines, self.out.channel(None)), 
+                (self.simplegozerlines, df), 
+                (self.supylines, self.out.channel(None))):
             parsers.append(self.out.parse_lines(f[0], format=f[1]))
         def _key(x):
             return x.get('timestamp', datetime(1970,1,1,0,0,0, tzinfo=timezone('utc')))

@@ -15,8 +15,9 @@ from trac.core import *
 from trac.perm import IPermissionRequestor
 from trac.config import Option, ListOption
 from trac.web.chrome import INavigationContributor, ITemplateProvider, \
-                            add_stylesheet, add_script
+                            add_stylesheet, add_script, add_link
 from trac.web.main import IRequestHandler
+from trac.web.href import Href
 from trac.util.html import escape, html, Markup
 from trac.util.datefmt import utc
 
@@ -42,6 +43,10 @@ class IrcLogsView(Component):
 
     hidden_users = ListOption('irclogs', 'hidden_users', '', 
                      doc='A list of users that should be hidden by default')
+
+    show_msg_types = ListOption('irclogs', 'show_msg_types', 
+                     [u'comment', u'action'],
+                     doc='There are message types to show by default')
 
 
     # ITemplateProvider methods
@@ -90,22 +95,24 @@ class IrcLogsView(Component):
         return l
 
     def _render_line(self, line):
+        hidden = line['type'] in self.show_msg_types and ' ' or 'hidden'
         line.update({
             'time': line.get('timestamp') and line['timestamp'].time() or '',
             'message': escape(line['message']),
             'comment': escape(line.get('comment')),
             'action': escape(line.get('action')),
+            'hidden': hidden,
         })
         if line['type'] == 'comment':
-            return ('<tr class="%(type)s"><td class="time">[%(time)s]' + \
+            return ('<tr class="%(type)s %(hidden)s"><td class="time">[%(time)s]' + \
                    '</td><td class="left %(nickcls)s">&lt;%(nick)s&gt;' + \
                    '</td><td class="right">%(comment)s</td></tr>')%line 
         if line['type'] == 'action':
-            return ('<tr class="%(type)s"><td class="time">[%(time)s]' + \
+            return ('<tr class="%(type)s %(hidden)s"><td class="time">[%(time)s]' + \
                    '</td><td class="left">*</td><td class="right">' + \
                    '%(nick)s %(action)s</td></tr>')%line
         else: 
-            return ('<tr class="%(type)s"><td class="time">[%(time)s]' + \
+            return ('<tr class="%(type)s %(hidden)s"><td class="time">[%(time)s]' + \
                    '</td><td class="left"></td><td class=' + \
                    '"right">%(message)s</td></tr>')%line
 
@@ -115,6 +122,16 @@ class IrcLogsView(Component):
         add_stylesheet(req, 'irclogs/css/ui.datepicker.css')
         add_stylesheet(req, 'irclogs/css/irclogs.css')
         add_script(req, 'irclogs/js/jquery-ui.js')
+        # crappy hack because there isn't a way to make alternate stylesheets
+        # this is basically add_stylesheet's code changed slightly
+        def _alt_css(req, filename, title):
+            href = req.href
+            if not filename.startswith('/'):
+                href = href.chrome
+            mt="text/css"
+            rel="alternate stylesheet"
+            add_link(req, rel, href(filename), title=title, mimetype=mt)
+        _alt_css(req, 'irclogs/css/irclogs-brief.css', 'Brief');
 
         context = {}
         entries = {}
