@@ -89,8 +89,25 @@ class IrcLogsView(Component):
             l['nickcls'] = 'nick-%d' % (sum(ord(c) for c in l['nick']) % 8)
         return l
 
-    def _hide_nicks(self, l):
-        return not l.get('hidden')
+    def _render_line(self, line):
+        line.update({
+            'time': line.get('timestamp') and line['timestamp'].time() or '',
+            'message': escape(line['message']),
+            'comment': escape(line.get('comment')),
+            'action': escape(line.get('action')),
+        })
+        if line['type'] == 'comment':
+            return ('<tr class="%(type)s"><td class="time">[%(time)s]' + \
+                   '</td><td class="left %(nickcls)s">&lt;%(nick)s&gt;' + \
+                   '</td><td class="right">%(comment)s</td></tr>')%line 
+        if line['type'] == 'action':
+            return ('<tr class="%(type)s"><td class="time">[%(time)s]' + \
+                   '</td><td class="left">*</td><td class="right">' + \
+                   '%(nick)s %(action)s</td></tr>')%line
+        else: 
+            return ('<tr class="%(type)s"><td class="time">[%(time)s]' + \
+                   '</td><td class="left"></td><td class=' + \
+                   '"right">%(message)s</td></tr>')%line
 
     def process_request(self, req):
         req.perm.assert_permission('IRCLOGS_VIEW')
@@ -133,13 +150,15 @@ class IrcLogsView(Component):
                 context['day'], context['year'])
         context['int_month'] = context['month']-1
         context['lines'] = ifilter(
-            self._hide_nicks, 
+            lambda x: not x.get('hidden'), 
             imap(self._map_lines, lines)
         )
 
         if req.args.get('feed') == 'feed':
-            lines = int(req.args.get('feed_count', 10))
-            context['lines'] = list(context['lines'])[-lines:]
+            limit = int(req.args.get('feed_count', 10))
+            context['lines'] = list(context['lines'])[-limit:]
+            context['rows'] = imap(self._render_line, context['lines'])
             return 'irclogs_feed.html', context, None 
         else:
+            context['rows'] = imap(self._render_line, context['lines'])
             return 'irclogs.html', context, None

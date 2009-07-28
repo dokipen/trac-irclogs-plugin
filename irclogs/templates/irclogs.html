@@ -68,7 +68,7 @@
     <div py:if="missing">
       No logfile for this day.
     </div>
-    ${irclog_table(lines,'searchable')}
+    ${irclog_table(rows)}
     <script type="text/javascript">
       date = new Date();
       <py:if test="year and month and day">

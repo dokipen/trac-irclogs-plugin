@@ -70,7 +70,9 @@ class IrcLogQuoteMacro(WikiMacroBase):
         channel = ch_mgr.get_channel_by_name(channel_name)
         provider = ch_mgr.get_provider(channel)
         lines = provider.get_events_in_range(channel_name, start, end)
-        lines = filter(irclogs._hide_nicks, map(irclogs._map_lines, lines))
+        lines = filter(lambda x: not x.get('hidden'), 
+                map(irclogs._map_lines, lines))
+        rows = map(irclogs._render_line, lines)
 
         add_stylesheet(formatter.req, 'irclogs/css/irclogs.css')
         data = Chrome(self.env).populate_data(
@@ -81,7 +83,8 @@ class IrcLogQuoteMacro(WikiMacroBase):
                 'year': '%04d'%(start.year),
                 'month': '%02d'%(start.month),
                 'day': '%02d'%(start.day),
-                'time': start.strftime("%H:%M:%S")
+                'time': start.strftime("%H:%M:%S"),
+                'rows': rows
             }
         )
         return Chrome(self.env).load_template('macro_quote.html') \
