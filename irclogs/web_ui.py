@@ -9,6 +9,7 @@ from time import strptime
 from trac.util.datefmt import localtz
 from datetime import datetime, timedelta
 from calendar import month_name
+from itertools import imap, ifilter
 
 from trac.core import *
 from trac.perm import IPermissionRequestor
@@ -123,7 +124,7 @@ class IrcLogsView(Component):
         # somewhat active.  Without this we get a shortage of feed lines
         # at day break.
         end = start + oneday
-        if req.args['feed']:
+        if req.args.get('feed') == 'feed':
             start = start - oneday
         lines = provider.get_events_in_range(context['channel'], start, end)
 
@@ -131,20 +132,14 @@ class IrcLogsView(Component):
         context['current_date'] = '%02d/%02d/%04d'%(context['month'], 
                 context['day'], context['year'])
         context['int_month'] = context['month']-1
-        context['lines'] = filter(
+        context['lines'] = ifilter(
             self._hide_nicks, 
-            map(self._map_lines, lines)
+            imap(self._map_lines, lines)
         )
 
-        # handle if display type is html or an external feed
-        if req.args['feed']:
-            if len(context['lines']) > 0:
-                # TODO: we should go to an older date rather then just 
-                # get latest lines when number requested exceeds
-                # the number in context['lines'].
-                lines = int(req.args.get('feed_count', 10))
-                if (len(context['lines']) >= lines):
-                    context['lines'] = context['lines'][-lines:]
+        if req.args.get('feed') == 'feed':
+            lines = int(req.args.get('feed_count', 10))
+            context['lines'] = list(context['lines'])[-lines:]
             return 'irclogs_feed.html', context, None 
         else:
             return 'irclogs.html', context, None

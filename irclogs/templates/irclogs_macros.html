@@ -3,33 +3,24 @@
      xmlns:py="http://genshi.edgewall.org/" py:strip="">
 
   <py:def function="irclog_table(lines, extra_classes='', page_href='', missing=False)">
-    <py:choose test="len(lines)">
-      <py:when test="0">
-        <div class="system-message">
-          <strong>No logs available</strong>
-        </div>
-      </py:when>
-      <py:otherwise>
-        <table id="irclog-table" class="irclog ${extra_classes}" py:if="not missing">
-          <tr py:for="line in lines" class="${line['type']} ${line['hidden']}" >
-            <py:choose test="line['type']">
-              <py:when test="'comment'">
-                <td class="time">[<a href="${page_href}#${line['timestamp'].time()}" title="${line['timestamp'].time()}" id="${line['timestamp'].time()}">${line['timestamp'].time()}</a>]</td>
-                <td class="left" >&lt;<span class="${line.get('nickcls')}">${line.get('nick')}</span>&gt;</td>
-                <td class="right">${line['type'] != 'comment' and line.get('nick') + ' ' or '' }${line['comment']}</td>
-              </py:when>
-              <py:when test="'other'">
-                <td class="time">[xxxxxxxxxxxx]</td>
-                <td></td><td><span class="${line['type']}">${line['message']}</span></td>
-              </py:when>
-              <py:otherwise>
-                <td class="time">[<a href="${page_href}#${line['timestamp'].time()}" title="${line['timestamp'].time()}" id="${line['timestamp'].time()}">${line['timestamp'].time()}</a>]</td>
-                <td></td><td><span class="${line['type']}">${line['message']}</span></td>
-              </py:otherwise>
-            </py:choose>
-          </tr>
-        </table>
-      </py:otherwise>
-    </py:choose>
+    <table id="irclog-table" class="irclog ${extra_classes}" py:if="not missing">
+      <tr py:for="line in lines" class="${line['type']} ${line['hidden']}" >
+        <py:choose test="line['type']">
+          <py:when test="'comment'">
+            <td class="time">[<a href="${page_href}#${line['timestamp'].time()}" title="${line['timestamp'].time()}" id="${line['timestamp'].time()}">${line['timestamp'].time()}</a>]</td>
+            <td class="left" >&lt;<span class="${line.get('nickcls')}">${line.get('nick')}</span>&gt;</td>
+            <td class="right">${line['type'] != 'comment' and line.get('nick') + ' ' or '' }${line['comment']}</td>
+          </py:when>
+          <py:when test="'other'">
+            <td class="time">[xxxxxxxxxxxx]</td>
+            <td></td><td><span class="${line['type']}">${line['message']}</span></td>
+          </py:when>
+          <py:otherwise>
+            <td class="time">[<a href="${page_href}#${line['timestamp'].time()}" title="${line['timestamp'].time()}" id="${line['timestamp'].time()}">${line['timestamp'].time()}</a>]</td>
+            <td></td><td><span class="${line['type']}">${line['message']}</span></td>
+          </py:otherwise>
+        </py:choose>
+      </tr>
+    </table>
   </py:def>
 </div>
