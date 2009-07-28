@@ -345,18 +345,18 @@ class FileIRCLogProvider(Component):
                                   in the other _regex parameters as 
                                   %(timestamp_regex)s and is seperate as a 
                                   convenience.
+              * timezone:         The timezone of the file timestamps.
 
           * target_tz: optional target timezone.  This is the timezone of the 
                 return data timedate objects.  Will not convert to target_tz 
                 if None.
         """
-        if not format: 
-            format = self.default_format()
         try:
             tz = timezone(format['timezone'])
         except UnknownTimeZoneError:
             self.log.warn("input timezone %s not supported, irclogs will be "\
                 "parsed as UTC")
+            format['timezone'] = 'utc'
             tz = timezone('utc')
 
         def _map(x):
