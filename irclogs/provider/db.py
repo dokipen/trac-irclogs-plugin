@@ -17,6 +17,8 @@ from trac.db.api import DatabaseManager
 
 from irclogs.api import IIRCLogsProvider, IRCChannelManager
 
+ENCODED_FIELDS = ('network', 'channel', 'nick', 'type', 'message', 'comment')
+
 class DBIRCLogProvider(Component):
     """
     Provide logs from irc log table.  
@@ -25,12 +27,30 @@ class DBIRCLogProvider(Component):
     # or 
     channel.test.channel = #test
     channel.test.provider = db
+
+    The database must contain a table named `chatlog`.  The table definiton 
+    should match:
+    CREATE TABLE chatlog (
+        id      SERIAL PRIMARY KEY,
+        time    TIMESTAMP NOT NULL DEFAULT now(),
+        network VARCHAR(256) NOT NULL,
+        target  VARCHAR(256) NOT NULL,
+        nick    VARCHAR(256) NOT NULL,
+        type    VARCHAR(256) NOT NULL,
+        msg     TEXT NOT NULL
+    );
+
+    If using the Gozerbot chatlog plugin, it will create this table 
+    automatically in not already present.
+
     """
 
     implements(IIRCLogsProvider)
 
     # IRCLogsProvider interface
     def get_events_in_range(self, channel_name, start, end):
+        global ENCODED_FIELDS
+
         ch_mgr = IRCChannelManager(self.env)
         ch = ch_mgr.get_channel_by_name(channel_name)
         def_tzname = self.config.get('irclogs', 'timezone', 'utc')
@@ -62,15 +82,12 @@ class DBIRCLogProvider(Component):
                   end
               )
             )
+            ignore_charset = False
             for l in cur:
                 timestamp = l[1]
                 timestamp = timestamp.replace(tzinfo=tz)
                 dt = ttz.normalize(timestamp.astimezone(ttz))
-                if ch.get('charset'):
-                    for i in range(2, len(l)):
-                        l[i] = unicode(l[i], ch['charset'], errors='ignore')
-
-                yield {
+                line = {
                     'timestamp': dt,
                     'network': l[2],
                     'channel': l[3],
@@ -79,6 +96,14 @@ class DBIRCLogProvider(Component):
                     'message': l[6],
                     'comment': l[6]
                 }
+                ignore_charset = ignore_charset or isinstance(line['message'],
+                                                              unicode)
+                if (not ignore_charset) and ch.get('charset'):
+                    for k in ENCODED_FIELDS:
+                        line[k] = unicode(line[k], ch['charset'], 
+                                          errors='ignore')
+                        continue
+                yield line
             cnx.close()
         except Exception, e:
             cnx.close()
