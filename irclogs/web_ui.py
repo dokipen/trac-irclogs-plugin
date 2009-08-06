@@ -110,7 +110,7 @@ class IrcLogsView(Component):
         if line['type'] == 'action':
             return ('<tr class="%(type)s %(hidden)s"><td class="time">[%(time)s]' + \
                    '</td><td class="left">*</td><td class="right">' + \
-                   '%(nick)s %(action)s</td></tr>')%line
+                   '%(action)s</td></tr>')%line
         else: 
             return ('<tr class="%(type)s %(hidden)s"><td class="time">[%(time)s]' + \
                    '</td><td class="left"></td><td class=' + \

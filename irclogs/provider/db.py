@@ -75,8 +75,8 @@ class DBIRCLogProvider(Component):
             cur.execute("""
               SELECT * FROM chatlog 
               WHERE network = %s AND target = %s AND time >= %s AND
-                time < %s """,(
-                  ch.get('network'),
+                time < %s ORDER BY "time" """,(
+                  ch.get('network') or '',
                   ch.get('channel'),
                   start,
                   end
@@ -94,7 +94,8 @@ class DBIRCLogProvider(Component):
                     'nick': l[4],
                     'type': l[5],
                     'message': l[6],
-                    'comment': l[6]
+                    'comment': l[6],
+                    'action': l[6].lstrip('* ')
                 }
                 ignore_charset = ignore_charset or isinstance(line['message'],
                                                               unicode)
