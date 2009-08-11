@@ -16,8 +16,8 @@ class IrcLogWiki(Component):
     implements(IWikiSyntaxProvider) 
 
     date_re = re.compile(
-            r'^((?P<channel>.+)-)?UTC(?P<datetime>(?P<year>\d{4})' +
-            r'-(?P<month>\d{2})-(?P<day>\d{2})(T(?P<time>\d{2}:\d{2}:\d{2})))?$')
+            r'^((?P<channel>[^-]+)-?)?(UTC(?P<datetime>(?P<year>\d{4})' +
+            r'-(?P<month>\d{2})-(?P<day>\d{2})(T(?P<time>\d{2}:\d{2}:\d{2})))?)?$')
     date_format = '%Y-%m-%dT%H:%M:%S'
     time_format = '%H:%M:%S'
 
@@ -33,11 +33,15 @@ class IrcLogWiki(Component):
        if not m:
            return system_message('Invalid IRC Log Link: '
                      'Must be of the format channel-UTCYYYY-MM-DDTHH:MM:SS %s')
-       ch_mgr = IRCChannelManager(self.env)
-       t = strptime(m.group('datetime'), self.date_format)
-       dt = datetime(*t[:6]).replace(tzinfo=timezone('utc'))
-       dt = ch_mgr.to_user_tz(formatter.req, dt)
-       timestr = dt.strftime(self.time_format)
-       return html.a(label, title=label, href=formatter.href.irclogs(
-                 m.group('channel'), '%02d'%dt.year, '%02d'%dt.month, 
-                 '%02d'%dt.day,) + '#%s'%timestr)
+       if not m.group('datetime'):
+           return html.a(label, title=label, href=formatter.href.irclogs(
+               m.group('channel')))
+       else:
+           ch_mgr = IRCChannelManager(self.env)
+           t = strptime(m.group('datetime'), self.date_format)
+           dt = datetime(*t[:6]).replace(tzinfo=timezone('utc'))
+           dt = ch_mgr.to_user_tz(formatter.req, dt)
+           timestr = dt.strftime(self.time_format)
+           return html.a(label, title=label, href=formatter.href.irclogs(
+                     m.group('channel'), '%02d'%dt.year, '%02d'%dt.month, 
+                     '%02d'%dt.day,) + '#%s'%timestr)
