@@ -201,7 +201,7 @@ class FileIRCLogProvider(Component):
     ListOption('irclogs', 'format.bip.paths', '%(network)s/%Y-%m/%(channel)s.%d.log')
     Option('irclogs', 'format.bip.timestamp_format', '%d-%m-%Y %H:%M:%S')
     Option('irclogs', 'format.bip.timestamp_regex', '(?P<timestamp>\d{2}-\d{2}-\d{4}.\d{2}:\d{2}:\d{2})')
-    Option('irclogs', 'format.bip.comment_regex', '^%(timestamp_regex)s\s(?P<message>[<>]\s(?P<nick>[^!]+)(![^\s]*)?:\s(?P<comment>.*))$')
+    Option('irclogs', 'format.bip.comment_regex', '^%(timestamp_regex)s\s(?P<message>[<>]\s(?P<nick>[^!:]+)(![^\s]*)?:\s(?P<comment>.*))$')
     Option('irclogs', 'format.bip.join_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<nick>[^!]+)(![^\s]*)?\shas\sjoined\s.*)$')
     Option('irclogs', 'format.bip.part_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<nick>[^!]+)(![^\s]*)?\shas\sleft\s.*)$')
     Option('irclogs', 'format.bip.quit_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<nick>[^!]+)(![^\s]*)?\shas\squit\s\["?(?P<quitmsg>.*)"?\]?.*)$')
