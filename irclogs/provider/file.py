@@ -218,6 +218,7 @@ class FileIRCLogProvider(Component):
         """Channel is the config channel name.  start and end are datetimes
         in the users tz.  If the start and end times have different timezones,
         you're fucked."""
+        self.log.debug('retrieving %s logs.  start: %s, end: %s'%(channel_name, start, end))
         channel = self.channel(channel_name)
         tzname = channel.get('timezone', 'utc')
         try:

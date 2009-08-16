@@ -39,6 +39,13 @@ class IIRCLogsProvider(Interface):
         channel.#test2.provider = file
         """
 
+class IIRCLogIndexer(Interface):
+    """Object to index logs."""
+
+    def update_index(self):
+        """
+        Update the index to now.
+        """
 
 def merge_iseq(iterables, key):
     # key values so we can decide what to sort by
@@ -97,6 +104,7 @@ class IRCChannelManager(Component):
     Get channels.
     """
     providers = ExtensionPoint(IIRCLogsProvider)
+    indexers = ExtensionPoint(IIRCLogIndexer)
 
     channel_re = re.compile('^channel\.(?P<channel>[^.]+)\.channel$')
 
@@ -114,6 +122,7 @@ class IRCChannelManager(Component):
 
     charset = Option('irclogs', 'charset', 'utf-8',
         doc="""Default charset that logs are retrieved in.""")
+
 
     def get_channel_names(self):
         """
