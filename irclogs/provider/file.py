@@ -209,8 +209,7 @@ class FileIRCLogProvider(Component):
     Option('irclogs', 'format.bip.topic_regex',   '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<nick>[^!]+)(![^\s]+)?\schanged\stopic\sof\s[^\s]+\sto:\s(?P<topic>.*))$')
     Option('irclogs', 'format.bip.mode_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\smode/[^\s]+\s\[(?P<mode>[^\]]+)\]\sby\s(?P<nick>[^!]+)(!.*)?)$')
     Option('irclogs', 'format.bip.kick_regex',    '^%(timestamp_regex)s\s(?P<message>-!-\s(?P<kicked>[^\s]+)\shas\sbeen\skicked\sby\s(?P<nick>[^!]+)(![^\s]+)?\s\[(?P<kickmsg>[^\]]+)\]?)$')
-        #'(?P<message>\*\s(?P<nick>[^ ]+)\s(?P<action>.*))$',
-    Option('irclogs', 'format.bip.action_regex',  '^%(timestamp_regex)s\s(?P<message>[<>]\s.\s(?P<nick>[^!\s]+)(![^\s]+)?\s(?P<action>.*))$')
+    Option('irclogs', 'format.bip.action_regex',  '^%(timestamp_regex)s\s(?P<message>[<>]\s.\s(?P<action>(?P<nick>[^!\s]+)(![^\s]+)?\s.*))$')
     Option('irclogs', 'format.bip.notice_regex',  '%(timestamp_regex)s\s(?P<message>TODO)$')
 
     # IRCLogsProvider interface
