@@ -65,9 +65,9 @@ class IrcLogsView(Component):
             yield 'irclogs-%s'%(ch.name())
 
     def get_navigation_items(self, req):
-        if req.perm.has_permission('IRCLOGS_VIEW'):
-            ch_mgr = IRCChannelManager(self.env)
-            for channel in ch_mgr.channels():
+        ch_mgr = IRCChannelManager(self.env)
+        for channel in ch_mgr.channels():
+            if req.perm.has_permission(channel.perm()):
                 if channel.name():
                     href = req.href.irclogs(channel.name())
                 else:
@@ -77,7 +77,9 @@ class IrcLogsView(Component):
 
     # IPermissionHandler methods
     def get_permission_actions(self):
-        return ['IRCLOGS_VIEW']
+        ch_mgr = IRCChannelManager(self.env)
+        perms = [channel.perm() for channel in ch_mgr.channels()]
+        return set(perms)
 
     # IRequestHandler methods
     def match_request(self, req):
@@ -117,7 +119,6 @@ class IrcLogsView(Component):
                    '"right">%(message)s</td></tr>')%line
 
     def process_request(self, req):
-        req.perm.assert_permission('IRCLOGS_VIEW')
         add_stylesheet(req, 'irclogs/css/jquery-ui.css')
         add_stylesheet(req, 'irclogs/css/ui.datepicker.css')
         add_stylesheet(req, 'irclogs/css/irclogs.css')
@@ -150,6 +151,7 @@ class IrcLogsView(Component):
 
         # TODO: do this for each channel, instead of hardcode
         channel = ch_mgr.channel(context['channel'])
+        req.perm.assert_permission(channel.perm())
         oneday = timedelta(days=1)
         start = datetime(context['year'], context['month'], context['day'], 
                 0, 0, 0, tzinfo=req.tz)

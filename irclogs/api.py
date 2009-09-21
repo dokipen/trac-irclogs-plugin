@@ -160,6 +160,9 @@ class IRCChannel(object):
         retval.update(custom_options)
         return retval
 
+    def perm(self):
+        return self.setting('perm', 'IRCLOGS_VIEW')
+
 class IRCChannelManager(Component):
     """
     Get channels.
