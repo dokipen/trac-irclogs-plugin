@@ -21,7 +21,8 @@ try:
     from whoosh import index
     whoosh_loaded = True
 except Exception, e:
-    sys.__stderr__.write("WARNING: Failed to load whoosh library.  Whoosh index disabled")
+    sys.__stderr__.write(
+            "WARNING: Failed to load whoosh library.  Whoosh index disabled")
     sys.__stderr__.write(e.message)
 
 if whoosh_loaded:
@@ -30,7 +31,8 @@ if whoosh_loaded:
         implements(IIRCLogIndexer)
 
         TIMESTAMP_FORMAT = '%Y%m%d%H%M%S'
-        SCHEMA = Schema(channel=STORED, timestamp=STORED, content=TEXT(stored=True))
+        SCHEMA = Schema(channel=STORED, timestamp=STORED, 
+                content=TEXT(stored=True))
         PARSER = QueryParser("content", schema=SCHEMA)
 
         indexpath = Option('irclogs', 'search_db_path', 'irclogs-index',
@@ -40,12 +42,15 @@ if whoosh_loaded:
 
         # Start ISearchSource impl
         def get_search_filters(self, req):
-            if not req.perm.has_permission('IRCLOGS_VIEW'):
-                return []
-            return [('irclogs', 'IRC Logs', True)]
-
+            ch_mgr = IRCChannelManager(self.env)
+            for channel in ch_mgr.channels():
+                if req.perm.has_permission(channel.perm()):
+                    return [('irclogs', 'IRC Logs', True)]
+            return []
 
         def get_search_results(self, req, terms, filters):
+            # cache perm checks to speed things up
+            permcache = {}
             usertz = timezone('utc')
             logtz = timezone('utc')
 
@@ -74,8 +79,13 @@ if whoosh_loaded:
                     channel = '%s/'%result['channel']
 
                 url = '/irclogs/%s%s'%(channel, d_str)
-                yield "%s#%s"%(req.href(url), t_str), 'irclogs for %s'%result['channel'], dt, 'irclog',\
-                    result['content']
+                if not permcache.has_key(channel):
+                    chobj = chmgr.channel(result['channel'])
+                    permcache[channel] = req.perm.has_permission(chobj.perm())
+                if permcache[channel]:
+                    yield "%s#%s"%(req.href(url), t_str), \
+                        'irclogs for %s'%result['channel'], dt, \
+                        'irclog', result['content']
         # End ISearchSource impl
 
         def update_index(self):
@@ -90,17 +100,20 @@ if whoosh_loaded:
                     ls = channel.events_in_range(last_index_dt, now)
                     for line in ls:
                         if line['type'] == 'comment': 
-                            content = "<%s> %s"%(line['nick'], line['comment'])
+                            content = "<%s> %s"%(line['nick'], 
+                                    line['comment'])
                             writer.add_document(
                                 channel=channel['name'],
-                                timestamp=line['timestamp'].strftime(self.TIMESTAMP_FORMAT),
+                                timestamp=line['timestamp'].strftime(
+                                    self.TIMESTAMP_FORMAT),
                                 content=content
                             )
                         if line['type'] == 'action':
                             content = "* %s %s"%(line['nick'], line['action'])
                             writer.add_document(
                                 channel=channel['name'],
-                                timestamp=line['timestamp'].strftime(self.TIMESTAMP_FORMAT),
+                                timestamp=line['timestamp'].strftime(
+                                    self.TIMESTAMP_FORMAT),
                                 content=content
                             )
                 writer.commit()

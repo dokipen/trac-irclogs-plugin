@@ -68,6 +68,7 @@ class IrcLogQuoteMacro(WikiMacroBase):
         start = ch_mgr.to_user_tz(formatter.req, start)
         end = start + timedelta(seconds=offset)
         channel = ch_mgr.channel(channel_name)
+        formatter.req.perm.assert_permission(channel.perm())
         lines = channel.events_in_range(start, end)
         lines = filter(lambda x: not x.get('hidden'), 
                 map(irclogs._map_lines, lines))
