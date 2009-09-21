@@ -103,7 +103,7 @@ if whoosh_loaded:
                             content = "<%s> %s"%(line['nick'], 
                                     line['comment'])
                             writer.add_document(
-                                channel=channel['name'],
+                                channel=channel.name(),
                                 timestamp=line['timestamp'].strftime(
                                     self.TIMESTAMP_FORMAT),
                                 content=content
@@ -111,7 +111,7 @@ if whoosh_loaded:
                         if line['type'] == 'action':
                             content = "* %s %s"%(line['nick'], line['action'])
                             writer.add_document(
-                                channel=channel['name'],
+                                channel=channel.name(),
                                 timestamp=line['timestamp'].strftime(
                                     self.TIMESTAMP_FORMAT),
                                 content=content
