@@ -1,7 +1,5 @@
 """
 Parse logs from db into structured data. 
-
-TODO: something about defining formats and channels.
 """
 
 # Copyright (c) 2009, Robert Corsaro
@@ -32,7 +30,7 @@ class DBIRCLogProvider(Component):
     should match:
     CREATE TABLE chatlog (
         id      SERIAL PRIMARY KEY,
-        time    TIMESTAMP NOT NULL DEFAULT now(),
+        time    DATETIME DEFAULT now(),
         network VARCHAR(256) NOT NULL,
         target  VARCHAR(256) NOT NULL,
         nick    VARCHAR(256) NOT NULL,
@@ -48,13 +46,13 @@ class DBIRCLogProvider(Component):
     implements(IIRCLogsProvider)
 
     # IRCLogsProvider interface
-    def get_events_in_range(self, channel_name, start, end):
+    def get_events_in_range(self, ch, start, end):
         global ENCODED_FIELDS
 
         ch_mgr = IRCChannelManager(self.env)
-        ch = ch_mgr.channel(channel_name)
+        self.log.debug(ch.settings())
         def_tzname = self.config.get('irclogs', 'timezone', 'utc')
-        tzname = ch.get('timezone', def_tzname)
+        tzname = ch.setting('timezone', def_tzname)
         try:
             tz = timezone(tzname)
         except UnknownTimeZoneError:
@@ -71,13 +69,18 @@ class DBIRCLogProvider(Component):
             ttz = tz
 
         try:
+            self.log.debug("""executing
+              SELECT * FROM chatlog 
+              WHERE network = %s AND target = %s AND time >= %s AND
+                time < %s ORDER BY "time" """)
+            self.log.debug("with %s, %s, %s, %s"%(ch.network() or '', ch.channel(), start, end))
             cur = cnx.cursor()
             cur.execute("""
               SELECT * FROM chatlog 
               WHERE network = %s AND target = %s AND time >= %s AND
                 time < %s ORDER BY "time" """,(
-                  ch.get('network') or '',
-                  ch.get('channel'),
+                  ch.network() or '',
+                  ch.channel(),
                   start,
                   end
               )
@@ -99,9 +102,9 @@ class DBIRCLogProvider(Component):
                 }
                 ignore_charset = ignore_charset or isinstance(line['message'],
                                                               unicode)
-                if (not ignore_charset) and ch.get('charset'):
+                if (not ignore_charset) and ch.setting('charset'):
                     for k in ENCODED_FIELDS:
-                        line[k] = unicode(line[k], ch['charset'], 
+                        line[k] = unicode(line[k], ch.setting('charset'), 
                                           errors='ignore')
                         continue
                 yield line
@@ -118,7 +121,7 @@ class DBIRCLogProvider(Component):
         dbm = IRCLogDatabaseManager(self.env)
         trac_db = self.config.get('trac', 'database')
         irc_db = self.config.get('irclogs', 'database', trac_db)
-        chan_db = channel.get('database', irc_db)
+        chan_db = channel.setting('database', irc_db)
         dbm.set_database(chan_db)
         return dbm.get_connection()
         
