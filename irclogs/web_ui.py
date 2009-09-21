@@ -61,19 +61,19 @@ class IrcLogsView(Component):
     # INavigationContributor methods
     def get_active_navigation_item(self, req):
         ch_mgr = IRCChannelManager(self.env)
-        for ch in ch_mgr.get_channel_names():
-            yield 'irclogs-%s'%(ch)
+        for ch in ch_mgr.channels():
+            yield 'irclogs-%s'%(ch.name())
 
     def get_navigation_items(self, req):
         if req.perm.has_permission('IRCLOGS_VIEW'):
             ch_mgr = IRCChannelManager(self.env)
-            for channel_name in ch_mgr.get_channel_names():
-                channel = ch_mgr.get_channel_by_name(channel_name)
-                href = req.href.irclogs(channel['name'])
-                if not channel['name']:
+            for channel in ch_mgr.channels():
+                if channel.name():
+                    href = req.href.irclogs(channel.name())
+                else:
                     href = req.href.irclogs()
-                l = html.a(channel['navbutton'], href=href)
-                yield 'mainnav', channel['menuid'], l 
+                l = html.a(channel.navbutton(), href=href)
+                yield 'mainnav', channel.menuid(), l 
 
     # IPermissionHandler methods
     def get_permission_actions(self):
@@ -149,8 +149,7 @@ class IrcLogsView(Component):
         ch_mgr = IRCChannelManager(self.env)
 
         # TODO: do this for each channel, instead of hardcode
-        channel = ch_mgr.get_channel_by_name(context['channel'])
-        provider = ch_mgr.get_provider(channel)
+        channel = ch_mgr.channel(context['channel'])
         oneday = timedelta(days=1)
         start = datetime(context['year'], context['month'], context['day'], 
                 0, 0, 0, tzinfo=req.tz)
@@ -160,7 +159,7 @@ class IrcLogsView(Component):
         end = start + oneday
         if req.args.get('feed') == 'feed':
             start = start - oneday
-        lines = provider.get_events_in_range(context['channel'], start, end)
+        lines = channel.events_in_range(start, end)
 
         context['viewmode'] = 'day'
         context['current_date'] = '%02d/%02d/%04d'%(context['month'], 

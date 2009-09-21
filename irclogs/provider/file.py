@@ -213,13 +213,13 @@ class FileIRCLogProvider(Component):
     Option('irclogs', 'format.bip.notice_regex',  '%(timestamp_regex)s\s(?P<message>TODO)$')
 
     # IRCLogsProvider interface
-    def get_events_in_range(self, channel_name, start, end):
+    def get_events_in_range(self, channel, start, end):
         """Channel is the config channel name.  start and end are datetimes
         in the users tz.  If the start and end times have different timezones,
         you're fucked."""
-        self.log.debug('retrieving %s logs.  start: %s, end: %s'%(channel_name, start, end))
-        channel = self.channel(channel_name)
-        tzname = channel.get('timezone', 'utc')
+        self.log.debug('retrieving %s logs.  start: %s, end: %s'%(channel.name(), start, end))
+        ch_mgr = IRCChannelManager(self.env)
+        tzname = channel.setting('timezone', 'utc')
         try:
             tz = timezone(tzname)
         except UnknownTimeZoneError:
@@ -246,7 +246,7 @@ class FileIRCLogProvider(Component):
                 if len(files) > 0:
                     files = [file(f) for f in files]
                     parsers = list(
-                        [self.parse_lines(f, format=channel, \
+                        [self.parse_lines(f, channel=channel, \
                             target_tz=ttz) for f in files])
                     def _key(x):
                         return x.get('timestamp', OLDDATE)
@@ -261,7 +261,7 @@ class FileIRCLogProvider(Component):
             else:
                 yield line
     
-    def get_name(self):
+    def name(self):
         return 'file'
     # end IRCLogsProvider interface
                 
@@ -299,41 +299,25 @@ class FileIRCLogProvider(Component):
         > [file-1.3-a.log, file-1.3-b.log]
         > [file-1.4-a.log, file-1.4-b.log]
         """
-        basepath = channel['basepath']
+        basepath = channel.format()['basepath']
         for date in dates:
             filepaths = []
-            paths = channel['paths']
+            paths = channel.format()['paths']
             if not isinstance(paths, list):
                 paths = list((paths,))
             for path in paths:
                 fileformat = os.path.join(basepath, path)
                 fileformat = date.strftime(fileformat)
                 fileformat = fileformat%({
-                    'channel': channel['channel'],
-                    'network': channel.get('network'),
-                    'channel_name': channel['channel'][1:],
+                    'channel': channel.channel(),
+                    'network': channel.setting('network'),
+                    'channel_name': channel.channel()[1:],
                 })
                 filepaths.append(fileformat)
                 self.log.debug("parsing %s"%(fileformat))
             yield filepaths
 
-    def channel(self, name):
-        """ 
-        Gets channel by name and replaces format string with format 
-        data.
-        """
-        ch_mgr = IRCChannelManager(self.env)
-        # kind of goofy, but we want to use 
-        # format for the default values and 
-        # we don't know the format until we
-        # get the channel.
-        ch = ch_mgr.get_channel_by_name(name)
-        format = prefix_options('format.%s'%ch['format'], 
-                self.config.options('irclogs'))
-        ch = ch_mgr.get_channel_by_name(name, format)
-        return ch
-
-    def parse_lines(self, lines, format=None, target_tz=None):
+    def parse_lines(self, lines, channel=None, target_tz=None):
         """Parse irc log lines into structured data.  format should
         contain all information about parsing the lines.
           * lines: all irc lines, any generator or list will do
@@ -352,6 +336,7 @@ class FileIRCLogProvider(Component):
                 return data timedate objects.  Will not convert to target_tz 
                 if None.
         """
+        format = channel.format()
         try:
             tz = timezone(format['timezone'])
         except UnknownTimeZoneError:

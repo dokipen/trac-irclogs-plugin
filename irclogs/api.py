@@ -32,7 +32,7 @@ class IIRCLogsProvider(Interface):
             * newnick: nick
         """
 
-    def get_name(self):
+    def name(self):
         """Returns the name of the provider as used in the configuration.
         ex.
         [irclogs]
@@ -99,6 +99,67 @@ def prefix_options(prefix, options):
     _map = lambda pair: (re.sub('^%s'%(prefix), '', pair[0]), pair[1])
     return dict(map(_map, filter(_filter, options)))
 
+class IRCChannel(object):
+    def __init__(self, chmgr, name=None):
+        self._chmgr = chmgr
+        self._name = name
+        c = self._chmgr.config
+        if not prefix_options('channel.%s.'%(name), c.options('irclogs')):
+            self._name = None
+
+    def settings(self):
+        c = self._chmgr.config
+        default_op = lambda x: re.match('^[^.]+$', x[0])
+        retoptions = dict(filter(default_op, c.options('irclogs')))
+        if self.name():
+            options= prefix_options(
+                    'channel.%s.'%(self.name()), c.options('irclogs'))
+            retoptions.update(options)
+        return retoptions
+
+    def setting(self, name, default=None):
+        return self.settings().get(name, default)
+
+    def events_in_range(self, start, end):
+        prov_name = self.provider()
+        provider = self._chmgr.provider(prov_name)
+        return provider.get_events_in_range(self, start, end)
+
+    def name(self):
+        return self._name
+
+    def navbutton(self):
+        return self.setting('navbutton', self.channel())
+
+    def menuid(self):
+        if self.name():
+            mid = self.setting('menuid', "irclogs-%s"%self.name())
+        else:
+            mid = self.setting('menuid', "irclogs")
+        return mid
+
+    def provider(self):
+        return self.setting('provider', "file")
+
+    def channel(self):
+        return self.setting('channel')
+
+    def network(self):
+        return self.setting('network')
+
+    def format(self):
+        retval = {}
+        config = self._chmgr.config
+        default_options = [i for i in config.options('irclogs')] 
+        retval.update(default_options)
+        dformat_options = prefix_options('format.%s'%self.setting('format'),
+                default_options)
+        retval.update(dformat_options)
+        custom_options= prefix_options(
+                'channel.%s.'%(self.name()), config.options('irclogs'))
+        retval.update(custom_options)
+        return retval
+
 class IRCChannelManager(Component):
     """
     Get channels.
@@ -123,8 +184,14 @@ class IRCChannelManager(Component):
     charset = Option('irclogs', 'charset', 'utf-8',
         doc="""Default charset that logs are retrieved in.""")
 
+    def channels(self):
+        """
+        Yield all channels
+        """
+        for chname in self.channel_names():
+            yield self.channel(chname)
 
-    def get_channel_names(self):
+    def channel_names(self):
         """
         Yield all channel names.  None means that there is a default 
         channel.
@@ -143,70 +210,21 @@ class IRCChannelManager(Component):
         if self.config.get('irclogs', 'channel'):
             yield None
 
-    def get_provider(self, channel):
+    def provider(self, name):
         """
         Return the log provider for the channel object.
         """
-        name = channel['name']
-        prov_name = self.config.get('irclogs', 'channel.%s.provider'%(name))
-        if not prov_name:
-            prov_name = self.config.get('irclogs', 'provider', 'file')
         for p in self.providers:
-            if prov_name == p.get_name():
+            if name == p.name():
                 return p
         raise Exception(
-                "%s IRCLogsProvider for channel %s not found."%(name, channel))
+                "IRCLogsProvider named %s not found."%(name))
 
-    def get_channel_by_name(self, name, defaults=None):
+    def channel(self, name):
         """
-        Get channel data by name.
-        
-        ex.
-        {
-          'channel': '#mychannel',
-          'format': 'supy',
-          'network': 'Freenode',
-          'provider': 'file',
-          'name': 'test'  # None for default
-        }
-
-        Network is usually none, but could be used with an irclogger that logs
-        on to multi-networks.  It is only used as a positional parameter in 
-        format.paths or the networks column for db backend.
+        Get channel by name.
         """
-        c = self.config
-        default_op = lambda x: re.match('^[^.]+$', x[0])
-        retoptions = dict(filter(default_op, c.options('irclogs')))
-        retoptions['name'] = name
-        if defaults:
-            retoptions.update(defaults)
-        if name:
-            options= prefix_options('channel.%s.'%(name), c.options('irclogs'))
-            if not options:
-                retoptions['name'] = None
-            retoptions.update(options)
-        if not retoptions.get('navbutton'):
-            retoptions['navbutton'] = retoptions['channel']
-        if name:
-            retoptions['menuid'] = 'irclogs-%s'%name
-        else:
-            retoptions['menuid'] = 'irclogs'
-        return retoptions
-
-    def get_channel_by_channel(self, channel, defaults=None):
-        c = self.config
-        ops = c.options('irclogs')
-        vals = filter(lambda x: (self.channel_re.match(x[0]) \
-                and x[1] == channel), ops)
-        if not vals:
-            if c.get('irclogs', 'channel') == channel:
-                return self.get_channel_by_name(None, defaults)
-            raise Exception('channel %s not found'%(channel))
-        default_channel = self.get_channel_by_name(None, defaults)
-        if len(vals) > 1 or vals[0][1] == default_channel['channel']:
-            raise Exception('multiple channels match %s'%(channel))
-        m = self.channel_re.match(vals[0][0])
-        return self.get_channel_by_name(m.group('channel'), defaults)
+        return IRCChannel(self, name)
 
     def to_user_tz(self, req, datetime):
         deftz = self.config.get('trac', 'default_timezone', 'UTC')

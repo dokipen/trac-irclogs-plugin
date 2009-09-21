@@ -67,9 +67,8 @@ class IrcLogQuoteMacro(WikiMacroBase):
         start = start.replace(tzinfo=timezone('utc'))
         start = ch_mgr.to_user_tz(formatter.req, start)
         end = start + timedelta(seconds=offset)
-        channel = ch_mgr.get_channel_by_name(channel_name)
-        provider = ch_mgr.get_provider(channel)
-        lines = provider.get_events_in_range(channel_name, start, end)
+        channel = ch_mgr.channel(channel_name)
+        lines = channel.events_in_range(start, end)
         lines = filter(lambda x: not x.get('hidden'), 
                 map(irclogs._map_lines, lines))
         rows = map(irclogs._render_line, lines)

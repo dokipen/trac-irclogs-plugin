@@ -52,7 +52,7 @@ class DBIRCLogProvider(Component):
         global ENCODED_FIELDS
 
         ch_mgr = IRCChannelManager(self.env)
-        ch = ch_mgr.get_channel_by_name(channel_name)
+        ch = ch_mgr.channel(channel_name)
         def_tzname = self.config.get('irclogs', 'timezone', 'utc')
         tzname = ch.get('timezone', def_tzname)
         try:
@@ -111,7 +111,7 @@ class DBIRCLogProvider(Component):
             self.log.error(e)
             raise e
     
-    def get_name(self):
+    def name(self):
         return 'db'
     # end IRCLogsProvider interface
     def _getdb(self, channel):

@@ -8,12 +8,13 @@ from trac.core import *
 from trac.test import EnvironmentStub
 
 from irclogs.provider.file import FileIRCLogProvider
-from irclogs.api import merge_iseq
+from irclogs.api import merge_iseq, IRCChannelManager
 
 class FileIRCLogProviderTestCase(unittest.TestCase):
     def setUp(self):
         self.env = EnvironmentStub()
         self.out = FileIRCLogProvider(self.env)
+        self.chmgr = IRCChannelManager(self.env)
         self.supylines = (
             '2008-05-03T02:28:19  <rcorsaro> will it work if I install it?',
             '2008-05-03T02:30:22  <dgynn> ok.  i copied it over',
@@ -68,7 +69,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         tzo = timezone(tz)
         results = [i for i in self.out.parse_lines(
             self.supylines, 
-            self.out.channel(None),
+            self.chmgr.channel(None),
             target_tz=tzo
         )]
 
@@ -93,7 +94,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
 
 
     def test_parse_supybot(self):
-        f = self.out.channel(None)
+        f = self.chmgr.channel(None)
         results = [i for i in self.out.parse_lines(self.supylines, f)]
 
         self.assertEquals('comment', results[0]['type'])
@@ -170,7 +171,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
     
     def test_parse_simple_gozerbot(self):
         self.out.config.set('irclogs', 'channel.test.format', 'gozer')
-        f = self.out.channel('test')
+        f = self.chmgr.channel('test')
         results = [i for i in self.out.parse_lines(self.simplegozerlines, f)]
 
         self.assertEquals('comment', results[0]['type'])
@@ -247,7 +248,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
     
     # gozerbot in supy emulation mode
     def test_parse_supy_gozerbot(self):
-        f = self.out.channel(None)
+        f = self.chmgr.channel(None)
         results = [i for i in self.out.parse_lines(self.supygozerlines, f)]
 
         self.assertEquals('comment', results[0]['type'])
@@ -323,7 +324,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         self.assertEquals('* SOME SPECIAL MESSAGE *', results[12]['message'])
 
     def test_default_format(self):
-        df = self.out.channel('blah')
+        df = self.chmgr.channel('blah').format()
         self.assertEquals('/var/lib/irclogs', df['basepath'])
         self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['paths'])
         self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
@@ -336,7 +337,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
 
     def test_supy_format(self):
         self.out.config.set('irclogs', 'channel.test.format', 'supy')
-        df = self.out.channel('test')
+        df = self.chmgr.channel('test').format()
         self.assertEquals('/var/lib/irclogs', df['basepath'])
         self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['paths'])
         self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
@@ -348,7 +349,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             re.compile(df['%s_regex'%(m)])
 
     def test_nonexistant_format(self):
-        df = self.out.channel('sdflkjlskjf')
+        df = self.chmgr.channel('sdflkjlskjf').format()
         self.assertEquals('/var/lib/irclogs', df['basepath'])
         self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['paths'])
         self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
@@ -361,7 +362,8 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
 
     def test_gozer_format(self):
         self.out.config.set('irclogs', 'channel.test.format', 'gozer')
-        df = self.out.channel('test')
+        #import pdb; pdb.set_trace()
+        df = self.chmgr.channel('test').format()
         self.assertEquals('/var/lib/irclogs', df['basepath'])
         self.assertEquals(['logs/%(network)s/simple/%(channel)s.%Y%m%d.slog',
             'logs/%(network)s/simple/%(channel_name)s.%Y%m%d.slog'], df['paths'])
@@ -374,7 +376,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             re.compile(df['%s_regex'%(m)])
 
     def test_none_format(self):
-        df = self.out.channel(None)
+        df = self.chmgr.channel(None).format()
         self.assertEquals('/var/lib/irclogs', df['basepath'])
         self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', df['paths'])
         self.assertEquals('%Y-%m-%dT%H:%M:%S', df['timestamp_format'])
@@ -388,35 +390,36 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
     def test_channel(self):
         self.out.config.set('irclogs', 'channel.test.channel', '#test')
         self.out.config.set('irclogs', 'channel.test.format', '')
-        ch = self.out.channel('test')
+        ch = self.chmgr.channel('test')
+        format = ch.format()
         self.assert_(ch)
-        self.assertEquals('#test', ch['channel'])
-        self.assertEquals('/var/lib/irclogs', ch['basepath'])
-        self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', ch['paths'])
-        self.assertEquals('%Y-%m-%dT%H:%M:%S', ch['timestamp_format'])
-        self.assertEquals('utc', ch['timezone'])
-        self.assert_(ch['timestamp_regex'])
-        self.assert_(ch['match_order'])
-        for m in re.split('[ |:,]+', ch['match_order']):
-            self.assert_(ch['%s_regex'%(m)])
-            re.compile(ch['%s_regex'%(m)])
+        self.assertEquals('#test', ch.channel())
+        self.assertEquals('/var/lib/irclogs', format['basepath'])
+        self.assertEquals('%(channel)s/%(channel)s.%Y-%m-%d.log', format['paths'])
+        self.assertEquals('%Y-%m-%dT%H:%M:%S', format['timestamp_format'])
+        self.assertEquals('utc', format['timezone'])
+        self.assert_(format['timestamp_regex'])
+        self.assert_(format['match_order'])
+        for m in re.split('[ |:,]+', format['match_order']):
+            self.assert_(format['%s_regex'%(m)])
+            re.compile(format['%s_regex'%(m)])
 
     def test_channel_funny_name(self):
         self.out.config.set('irclogs', 'channel.mingya.channel', '#test')
         self.out.config.set('irclogs', 'channel.mingya.format', '')
-        ch = self.out.channel('mingya')
+        ch = self.chmgr.channel('mingya')
         self.assert_(ch)
 
     def test_channel_with_supy_format(self):
         self.out.config.set('irclogs', 'channel.test.channel', '#test')
         self.out.config.set('irclogs', 'channel.test.format', 'supy')
-        ch = self.out.channel('test')
+        ch = self.chmgr.channel('test')
         self.assert_(ch)
 
     def test_channel_with_gozer_format(self):
         self.out.config.set('irclogs', 'channel.test.channel', '#test')
         self.out.config.set('irclogs', 'channel.test.format', 'gozer')
-        ch = self.out.channel('test')
+        ch = self.chmgr.channel('test')
         self.assert_(ch)
 
     def test_get_file_dates(self):
@@ -445,12 +448,12 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
     def test_merge_iseq(self):
         parsers = []
         self.out.config.set('irclogs', 'channel.test.format', 'gozer')
-        df = self.out.channel('test')
+        df = self.chmgr.channel('test')
         for f in (
-                (self.supygozerlines, self.out.channel(None)), 
+                (self.supygozerlines, self.chmgr.channel(None)), 
                 (self.simplegozerlines, df), 
-                (self.supylines, self.out.channel(None))):
-            parsers.append(self.out.parse_lines(f[0], format=f[1]))
+                (self.supylines, self.chmgr.channel(None))):
+            parsers.append(self.out.parse_lines(f[0], channel=f[1]))
         def _key(x):
             return x.get('timestamp', datetime(1970,1,1,0,0,0, tzinfo=timezone('utc')))
         lines = list(merge_iseq(parsers, key=_key))

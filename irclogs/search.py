@@ -86,10 +86,8 @@ if whoosh_loaded:
             writer = idx.writer()
             try:
                 chmgr = IRCChannelManager(self.env)
-                for channel_name in chmgr.get_channel_names():
-                    channel = chmgr.get_channel_by_name(channel_name)
-                    provider = chmgr.get_provider(channel)
-                    ls = provider.get_events_in_range(channel['name'], last_index_dt, now)
+                for channel in chmgr.channels():
+                    ls = channel.events_in_range(last_index_dt, now)
                     for line in ls:
                         if line['type'] == 'comment': 
                             content = "<%s> %s"%(line['nick'], line['comment'])
