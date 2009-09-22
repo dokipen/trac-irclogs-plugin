@@ -106,15 +106,18 @@ class IrcLogsView(Component):
             'hidden': hidden,
         })
         if line['type'] == 'comment':
-            return ('<tr class="%(type)s %(hidden)s"><td class="time">[%(time)s]' + \
+            return ('<tr class="%(type)s %(hidden)s"><td class="time">' + \
+                   '[<a name="%(time)s" href="#%(time)s">%(time)s</a>]' + \
                    '</td><td class="left %(nickcls)s">&lt;%(nick)s&gt;' + \
                    '</td><td class="right">%(comment)s</td></tr>')%line 
         if line['type'] == 'action':
-            return ('<tr class="%(type)s %(hidden)s"><td class="time">[%(time)s]' + \
+            return ('<tr class="%(type)s %(hidden)s"><td class="time">' + \
+                   '[<a name="%(time)s" href="#%(time)s">%(time)s</a>]' + \
                    '</td><td class="left">*</td><td class="right">' + \
                    '%(action)s</td></tr>')%line
         else: 
-            return ('<tr class="%(type)s %(hidden)s"><td class="time">[%(time)s]' + \
+            return ('<tr class="%(type)s %(hidden)s"><td class="time">' + \
+                   '[<a name="%(time)s" href="#%(time)s">%(time)s</a>]' + \
                    '</td><td class="left"></td><td class=' + \
                    '"right">%(message)s</td></tr>')%line
 
