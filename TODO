@@ -1,0 +1,5 @@
+ * Fix search
+ * make readme
+ * Pagination
+ * Interpret irc control characters (bold, colors.. etc.. read RFC).
+ * cache rendered lines
