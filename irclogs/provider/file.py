@@ -226,16 +226,16 @@ class FileIRCLogProvider(Component):
             self.log.warn("input timezone %s not supported, irclogs will be "\
                     "parsed as UTC")
             tzname = 'UTC'
-            tz = timezone(tzname)
+            tz = UTC
         dates = self._get_file_dates(start, end, tz)
         filesets = self._get_files(channel, dates)
         # target tz
         # convert to pytz timezone
         try:
-            ttz = timezone(start.tzname())
+            ttz = timezone(str(start.tzinfo))
         except UnknownTimeZoneError:
             self.log.warn("timezone %s not supported, irclog output will be "\
-                    "%s"%(start.tzname(), tzname))
+                    "%s"%(start.tzinfo, tzname))
             ttz = tz
 
 
@@ -271,10 +271,8 @@ class FileIRCLogProvider(Component):
         timezones."""
         if type(file_tz) == str:
             file_tz = timezone(file_tz)
-        normal_start = start.astimezone(file_tz)
-        file_tz.normalize(normal_start)
-        normal_end = end.astimezone(file_tz)
-        file_tz.normalize(normal_end)
+        normal_start = file_tz.normalize(start.astimezone(file_tz))
+        normal_end = file_tz.normalize(end.astimezone(file_tz))
 
         # get dates for files
         yield normal_start.date()
@@ -357,7 +355,7 @@ class FileIRCLogProvider(Component):
 
         def _parse_timestamp(tsstr):
             t = strptime(tsstr, format['timestamp_format'])
-            dt = datetime(*t[:6]).replace(tzinfo=tz)
+            dt = tz.localize(datetime(*t[:6]))
             if target_tz:
                 dt = target_tz.normalize(dt.astimezone(target_tz))
             return dt

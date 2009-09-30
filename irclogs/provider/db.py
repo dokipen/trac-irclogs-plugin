@@ -88,7 +88,7 @@ class DBIRCLogProvider(Component):
             ignore_charset = False
             for l in cur:
                 timestamp = l[1]
-                timestamp = timestamp.replace(tzinfo=tz)
+                timestamp = tz.localize(timestamp)
                 dt = ttz.normalize(timestamp.astimezone(ttz))
                 line = {
                     'timestamp': dt,

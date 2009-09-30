@@ -51,16 +51,13 @@ if whoosh_loaded:
         def get_search_results(self, req, terms, filters):
             # cache perm checks to speed things up
             permcache = {}
-            usertz = timezone('utc')
-            logtz = timezone('utc')
+            chmgr = IRCChannelManager(self.env)
 
             if not 'irclogs' in filters:
                 return
             
             #logview = web_ui.IrcLogsView(self.env)
-            chmgr = IRCChannelManager(self.env)
-            for result in self.search(terms, tz=logtz):
-                dt = None
+            for result in self.search(terms):
                 dt_str = ''
                 if result.get('timestamp'):
                     dt = chmgr.to_user_tz(req, result['timestamp'])
@@ -89,16 +86,14 @@ if whoosh_loaded:
         # End ISearchSource impl
 
         def update_index(self):
-            last_index_dt = datetime(*gmtime(self.last_index)[:6]).\
-                replace(tzinfo=UTC)
-            now = datetime.utcnow().replace(tzinfo=UTC)
+            last_index_dt = UTC.localize(datetime(*gmtime(self.last_index)[:6]))
+            now = UTC.localize(datetime.utcnow())
             idx = self.get_index()
             writer = idx.writer()
             try:
                 chmgr = IRCChannelManager(self.env)
                 for channel in chmgr.channels():
-                    ls = channel.events_in_range(last_index_dt, now)
-                    for line in ls:
+                    for line in channel.events_in_range(last_index_dt, now):
                         if line['type'] == 'comment': 
                             content = "<%s> %s"%(line['nick'], 
                                     line['comment'])
@@ -146,15 +141,14 @@ if whoosh_loaded:
                 writer.add_document(channel=ch, timestamp=ts, content=c)
             writer.commit()
 
-        def search(self, terms, tz='utc'):
-            if isinstance(tz, str):
-                tz = timezone(tz)
+        def search(self, terms):
+            chmgr = IRCChannelManager(self.env)
             ix = self.get_index()
             searcher = ix.searcher()
             parsed_terms = self.PARSER.parse(' or '.join(terms))
             if terms:
                 for f in searcher.search(parsed_terms):
                     timestamp = strptime(f['timestamp'], self.TIMESTAMP_FORMAT)
-                    dt = datetime(*timestamp[:6]).replace(tzinfo=tz)
-                    f['timestamp'] = dt
+                    f['timestamp'] = \
+                            UTC.localize(datetime(*timestamp[:6]))
                     yield f

@@ -2,7 +2,7 @@ import os
 import re
 from time import strptime
 from datetime import datetime, timedelta
-from pytz import timezone
+from pytz import timezone, UTC
 
 from trac.web.chrome import add_stylesheet, add_script, Chrome
 from trac.wiki.macros import WikiMacroBase
@@ -64,7 +64,7 @@ class IrcLogQuoteMacro(WikiMacroBase):
         irclogs = IrcLogsView(self.env)        
         ch_mgr = IRCChannelManager(self.env)
         start = datetime(*strptime(utc_dt, self.date_format)[:6])
-        start = start.replace(tzinfo=timezone('utc'))
+        start = UTC.localize(start)
         start = ch_mgr.to_user_tz(formatter.req, start)
         end = start + timedelta(seconds=offset)
         channel = ch_mgr.channel(channel_name)

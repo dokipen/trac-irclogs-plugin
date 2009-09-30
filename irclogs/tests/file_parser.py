@@ -28,6 +28,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             '2008-05-03T02:35:27  *** dgynn changes topic to "Enterprise Tools and Frameworks"',
             '2008-05-03T02:36:27  *** rcorsaro is now known as bobby-robert',
             '2008-05-03T02:37:27  -rcorsaro- hello there',
+            '2008-08-15T02:37:27  -rcorsaro- goodbye there',
             '* SOME SPECIAL MESSAGE *',
         )
 
@@ -73,23 +74,25 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             target_tz=tzo
         )]
 
-        self.assertEquals(self._date('20080502212819', tz), results[0]['timestamp'])
-        self.assertEquals(self._date("20080502213022", tz), results[1]['timestamp'])
-        self.assertEquals(self._date("20080502213025", tz), results[2]['timestamp'])
-        self.assertEquals(self._date("20080502213026", tz), results[3]['timestamp'])
-        self.assertEquals(self._date("20080502213027", tz), results[4]['timestamp'])
-        self.assertEquals(self._date("20080502213127", tz), results[5]['timestamp'])
-        self.assertEquals(self._date("20080502213227", tz), results[6]['timestamp'])
-        self.assertEquals(self._date("20080502213327", tz), results[7]['timestamp'])
-        self.assertEquals(self._date("20080502213427", tz), results[8]['timestamp'])
-        self.assertEquals(self._date("20080502213527", tz), results[9]['timestamp'])
-        self.assertEquals(self._date("20080502213627", tz), results[10]['timestamp'])
-        self.assertEquals(self._date("20080502213727", tz), results[11]['timestamp'])
+        
+        self.assertEquals(self._date('20080502222819', tz), results[0]['timestamp'])
+        self.assertEquals(self._date("20080502223022", tz), results[1]['timestamp'])
+        self.assertEquals(self._date("20080502223025", tz), results[2]['timestamp'])
+        self.assertEquals(self._date("20080502223026", tz), results[3]['timestamp'])
+        self.assertEquals(self._date("20080502223027", tz), results[4]['timestamp'])
+        self.assertEquals(self._date("20080502223127", tz), results[5]['timestamp'])
+        self.assertEquals(self._date("20080502223227", tz), results[6]['timestamp'])
+        self.assertEquals(self._date("20080502223327", tz), results[7]['timestamp'])
+        self.assertEquals(self._date("20080502223427", tz), results[8]['timestamp'])
+        self.assertEquals(self._date("20080502223527", tz), results[9]['timestamp'])
+        self.assertEquals(self._date("20080502223627", tz), results[10]['timestamp'])
+        self.assertEquals(self._date("20080502223727", tz), results[11]['timestamp'])
+        self.assertEquals(self._date("20080502223727", tz), results[11]['timestamp'])
 
     def _date(self, d, tz='utc'):
         t = strptime(d, "%Y%m%d%H%M%S")
         tz = timezone(tz)
-        dt = datetime(*t[:6]).replace(tzinfo=tz)
+        dt = tz.localize(datetime(*t[:6]))
         return tz.normalize(dt)
 
 
@@ -166,8 +169,8 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         self.assertEquals('rcorsaro', results[11]['nick'])
         self.assertEquals('hello there', results[11]['comment'])
 
-        self.assertEquals('other', results[12]['type'])
-        self.assertEquals('* SOME SPECIAL MESSAGE *', results[12]['message'])
+        self.assertEquals('other', results[13]['type'])
+        self.assertEquals('* SOME SPECIAL MESSAGE *', results[13]['message'])
     
     def test_parse_simple_gozerbot(self):
         self.out.config.set('irclogs', 'channel.test.format', 'gozer')
@@ -457,7 +460,7 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         def _key(x):
             return x.get('timestamp', datetime(1970,1,1,0,0,0, tzinfo=timezone('utc')))
         lines = list(merge_iseq(parsers, key=_key))
-        self.assertEquals(39, len(lines))
+        self.assertEquals(40, len(lines))
 
 def suite():
     suite = unittest.TestSuite()

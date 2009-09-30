@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 from time import strptime, strftime
-from pytz import timezone
+from pytz import timezone, UTC
 
 from trac.core import *
 from trac.wiki import IWikiSyntaxProvider
@@ -39,7 +39,7 @@ class IrcLogWiki(Component):
        else:
            ch_mgr = IRCChannelManager(self.env)
            t = strptime(m.group('datetime'), self.date_format)
-           dt = datetime(*t[:6]).replace(tzinfo=timezone('utc'))
+           dt = UTC.localize(datetime(*t[:6]))
            dt = ch_mgr.to_user_tz(formatter.req, dt)
            timestr = dt.strftime(self.time_format)
            return html.a(label, title=label, href=formatter.href.irclogs(

@@ -156,8 +156,9 @@ class IrcLogsView(Component):
         channel = ch_mgr.channel(context['channel'])
         req.perm.assert_permission(channel.perm())
         oneday = timedelta(days=1)
-        start = datetime(context['year'], context['month'], context['day'], 
-                0, 0, 0, tzinfo=req.tz)
+        reqtz = timezone(str(req.tz))
+        start = reqtz.localize(datetime(context['year'], context['month'], 
+            context['day'], 0, 0, 0))
         # cheezy hack to give us enough lines as long as the channel is 
         # somewhat active.  Without this we get a shortage of feed lines
         # at day break.

@@ -1,12 +1,13 @@
+# -*- coding: utf-8 -*-
 import unittest
 from time import strptime
 from datetime import datetime
-from pytz import timezone
+from pytz import timezone, UTC
 
 from trac.core import *
-from trac.test import EnvironmentStub
+from trac.test import EnvironmentStub, Mock
 
-from irclogs.api import *
+from irclogs.api import IRCChannelManager 
 
 class ApiTestCase(unittest.TestCase):
     def setUp(self):
@@ -57,6 +58,20 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual('network1', c.network())
         self.assertEqual('blah', c.settings()['blah'])
         self.assertEqual('test4', c.name())
+
+    def test_user_tz(self):
+        req = Mock(session={'tz': 'America/New_York'})
+        self.assertEqual('America/New_York', req.session.get('tz'))
+        dt = UTC.localize(datetime.today())
+        udt = self.out.to_user_tz(req, dt)
+        self.assertEqual('America/New_York', str(udt.tzinfo))
+
+    def test_tz_conversion(self):
+        NYC = timezone('America/New_York')
+        nydt = NYC.localize(datetime(2009, 8, 15, 12, 0, 0), None)
+        udt = UTC.normalize(nydt.astimezone(UTC))
+        nydt2 = NYC.normalize(udt.astimezone(NYC))
+        self.assertEqual(nydt, nydt2)
 
 def suite():
     suite = unittest.TestSuite()
