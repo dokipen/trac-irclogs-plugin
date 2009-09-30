@@ -23,8 +23,14 @@ setup(
     },
     entry_points = {
         'trac.plugins': [
-            'irclogs = irclogs',
-            'irclogs.provider = irclogs.provider',
+            'irclogs.api = irclogs.api',
+            'irclogs.macros = irclogs.macros',
+            'irclogs.nojs = irclogs.nojs',
+            'irclogs.search = irclogs.search',
+            'irclogs.web_ui = irclogs.web_ui',
+            'irclogs.wiki = irclogs.wiki',
+            'irclogs.provider.file = irclogs.provider.file',
+            'irclogs.provider.db = irclogs.provider.db',
         ],
         'console_scripts': ['update-irc-search = irclogs.console:update_irc_search',],
     },
