@@ -1,7 +1,7 @@
 import unittest
 from time import strptime
 from datetime import datetime
-from pytz import timezone
+from pytz import timezone, UTC
 import re
 
 from trac.core import *
@@ -89,11 +89,11 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
         self.assertEquals(self._date("20080502223727", tz), results[11]['timestamp'])
         self.assertEquals(self._date("20080502223727", tz), results[11]['timestamp'])
 
-    def _date(self, d, tz='utc'):
+    def _date(self, d, tz='UTC'):
         t = strptime(d, "%Y%m%d%H%M%S")
         tz = timezone(tz)
         dt = tz.localize(datetime(*t[:6]))
-        return tz.normalize(dt)
+        return dt
 
 
     def test_parse_supybot(self):
@@ -461,6 +461,13 @@ class FileIRCLogProviderTestCase(unittest.TestCase):
             return x.get('timestamp', datetime(1970,1,1,0,0,0, tzinfo=timezone('utc')))
         lines = list(merge_iseq(parsers, key=_key))
         self.assertEquals(40, len(lines))
+
+    def test_file_dates(self):
+        start = self._date("20090215120000").replace(tzinfo=UTC)
+        end = self._date("20090215121500").replace(tzinfo=UTC)
+        dates = [i for i in self.out._get_file_dates(start, end)]
+        for i in range(0, len(dates)-1):
+            self.assertTrue(dates[i] < dates[i+1], "(%s) Assertion Failed: %s < %s"%(dates, dates[i], dates[i+1]))
 
 def suite():
     suite = unittest.TestSuite()

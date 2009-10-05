@@ -1,7 +1,7 @@
 from datetime import datetime
 from os import path
 from pytz import timezone, UTC
-from time import strftime, strptime, gmtime, mktime
+from time import strftime, strptime, gmtime, mktime, tzset
 import os
 import sys
 
@@ -111,12 +111,21 @@ if whoosh_loaded:
                                     self.TIMESTAMP_FORMAT),
                                 content=content
                             )
-                writer.commit()
+                # START BULLSHIT
+                # Python can't turn a nonlocal datetime to a epoch time AFIACT
+                # This pisses me off to no end.  Who knows what kind of fucked
+                # up side effects this has.
+                os.environ['TZ'] = 'UTC'
+                tzset()
+                # END BULLSHIT
                 epoch_now = int(mktime(now.timetuple()))
                 self.config['irclogs'].set('last_index', epoch_now)
                 self.config.save()
+                writer.commit()
+                idx.close()
             except Exception, e:
                 writer.cancel()
+                idx.close()
                 raise e
 
         def get_index(self):
@@ -128,18 +137,6 @@ if whoosh_loaded:
             if not index.exists_in(ip):
                 index.create_in(ip, self.SCHEMA)
             return index.open_dir(ip)
-
-        def index_lines(self, lines, channel):
-            ix = self.get_index()
-            writer = ix.writer()
-            for line in lines:
-                ts = line.get('timestamp')
-                if ts:
-                    ts = ts.strftime(self.TIMESTAMP_FORMAT)
-                ch = channel['name']
-                c = line['content']
-                writer.add_document(channel=ch, timestamp=ts, content=c)
-            writer.commit()
 
         def search(self, terms):
             chmgr = IRCChannelManager(self.env)

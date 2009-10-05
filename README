@@ -1,1 +1,1 @@
-TODO
+WARNING:  This plugin sets the os.environ['TZ'] to UTC and calls time.settz().  I don't know what kind of side effects this may cause.  This was done so that I could convert UTC datetimes to epoch timestamps.  The offending code is in irclogs/search.py.  If you have a better way, please submit a patch.

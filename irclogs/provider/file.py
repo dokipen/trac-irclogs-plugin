@@ -23,7 +23,7 @@ these lines a best guess timestamp equal to the previously logged line.
 import re
 from time import strptime, strftime
 from datetime import datetime, timedelta
-from pytz import timezone, UnknownTimeZoneError
+from pytz import timezone, UnknownTimeZoneError, UTC
 import os.path
 import itertools
 import operator
@@ -265,7 +265,7 @@ class FileIRCLogProvider(Component):
         return 'file'
     # end IRCLogsProvider interface
                 
-    def _get_file_dates(self, start, end, file_tz='utc'):
+    def _get_file_dates(self, start, end, file_tz=UTC):
         """Get files that are within the start-end range, taking into
         account that the file timezone can be different from the start-end
         timezones."""
@@ -281,7 +281,7 @@ class FileIRCLogProvider(Component):
         while d < normal_end:
             d = d + oneday
             yield d.date()
-        if d.day != normal_end.day:
+        if d.day < normal_end.day:
             yield normal_end.date()
 
     def _get_files(self, channel, dates):

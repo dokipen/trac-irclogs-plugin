@@ -1,0 +1,2 @@
+#!/bin/sh
+python irclogs/tests/__init__.py
