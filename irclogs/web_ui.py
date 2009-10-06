@@ -126,6 +126,7 @@ class IrcLogsView(Component):
         add_stylesheet(req, 'irclogs/css/ui.datepicker.css')
         add_stylesheet(req, 'irclogs/css/irclogs.css')
         add_script(req, 'irclogs/js/jquery-ui.js')
+        add_script(req, 'irclogs/js/irclogs.js')
         # crappy hack because there isn't a way to make alternate stylesheets
         # this is basically add_stylesheet's code changed slightly
         def _alt_css(req, filename, title):
