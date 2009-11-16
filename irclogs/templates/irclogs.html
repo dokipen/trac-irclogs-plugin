@@ -107,7 +107,9 @@
           } else {
             $('link[title="Brief"]').attr('disabled', false);
           }
-          window.location.href = window.location.href;
+          if (window.location.hash) {
+              window.location.href = window.location.href;
+          }
         }
         updateIrclogs();
         $('#showactions').click(updateIrclogs);
