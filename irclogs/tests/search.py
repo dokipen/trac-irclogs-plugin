@@ -73,12 +73,12 @@ class SearchTestCase(unittest.TestCase):
         req = Request(self._make_environ(), None)
         req.session = {'tz': 'UTC'}
         req.perm = Mock(has_permission= lambda x: True)
-        results = [i for i in self.out.get_search_results(req, ('hello',), ('irclogs',))]
+        results = [i for i in self.out.get_search_results(req, (u'hello',), ('irclogs',))]
         self.assertEqual(20, len(results))
         self.assertEqual(self.dt.hour, results[0][2].hour)
         req.session = {'tz': 'America/New_York'}
         req.perm = Mock(has_permission= lambda x: True)
-        results = [i for i in self.out.get_search_results(req, ('hello',), ('irclogs',))]
+        results = [i for i in self.out.get_search_results(req, (u'hello',), ('irclogs',))]
         self.assertEqual(20, len(results))
         est = timezone('America/New_York')
         expect_dt = est.normalize(self.dt.astimezone(est))
@@ -91,7 +91,7 @@ class SearchTestCase(unittest.TestCase):
         req = Request(self._make_environ(), None)
         req.session = {'tz': 'America/New_York'}
         req.perm = Mock(has_permission= lambda x: True)
-        results = [i for i in self.out.get_search_results(req, ('hello',), ('irclogs',))]
+        results = [i for i in self.out.get_search_results(req, (u'hello',), ('irclogs',))]
         self.assertEqual(20, len(results))
         self.assertEqual((self.dt.hour-5+24)%24, results[0][2].hour)
 
@@ -100,16 +100,16 @@ class SearchTestCase(unittest.TestCase):
         req = Request(self._make_environ(), None)
         req.session = {'tz': 'UTC'}
         req.perm = Mock(has_permission= lambda x: True)
-        results = [i for i in self.out.get_search_results(req, ('hello',), ('irclogs',))]
+        results = [i for i in self.out.get_search_results(req, (u'hello',), ('irclogs',))]
         self.assertEqual(20, len(results))
         self.out.update_index()
-        results = [i for i in self.out.get_search_results(req, ('hello',), ('irclogs',))]
+        results = [i for i in self.out.get_search_results(req, (u'hello',), ('irclogs',))]
         self.assertEqual(40, len(results))
         self.out.update_index()
-        results = [i for i in self.out.get_search_results(req, ('hello',), ('irclogs',))]
+        results = [i for i in self.out.get_search_results(req, (u'hello',), ('irclogs',))]
         self.assertEqual(60, len(results))
         self.out.update_index()
-        results = [i for i in self.out.get_search_results(req, ('hello',), ('irclogs',))]
+        results = [i for i in self.out.get_search_results(req, (u'hello',), ('irclogs',))]
         self.assertEqual(80, len(results))
 
 def suite():
